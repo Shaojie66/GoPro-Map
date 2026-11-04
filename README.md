@@ -2,7 +2,7 @@
 
 一台相机，一人一周，从布里斯托出发，慢慢走遍英国。
 
-网页地址：https://shaojie66.github.io/gopro-map/
+网页地址：https://shaojie66.github.io/GoPro-Map/ （区分大小写）
 
 ## 每周更新
 

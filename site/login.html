@@ -31,10 +31,22 @@
         <button class="seg-b" type="button" role="tab" data-mode="up" aria-selected="false">注册</button>
       </div>
       <label class="field"><span>邮箱</span><input name="email" type="email" autocomplete="email" required></label>
-      <label class="field"><span>密码 <em id="pwHint">至少 8 位</em></span><input name="password" type="password" autocomplete="current-password" minlength="8" required></label>
+      <div class="field"><label for="pw">密码 <em id="pwHint">至少 8 位</em></label>
+        <div class="pw"><input id="pw" name="password" type="password" autocomplete="current-password" minlength="8" required><button class="eye" type="button" aria-label="显示密码" aria-pressed="false">显示</button></div></div>
+      <div class="field" id="pw2Field" hidden><label for="pw2">确认密码 <em>再输一遍</em></label>
+        <div class="pw"><input id="pw2" name="password2" type="password" autocomplete="new-password" minlength="8"><button class="eye" type="button" aria-label="显示密码" aria-pressed="false">显示</button></div></div>
       <p class="err" id="err" role="alert"></p>
       <button class="btn hot big" type="submit" id="go">登录</button>
       <button class="link-btn" type="button" id="forgot">忘记密码？</button>
+    </form>
+    <!-- 注册后填邮箱验证码 -->
+    <form class="card form" id="codeForm" novalidate hidden>
+      <h2 style="margin:0">填邮箱验证码</h2>
+      <p class="muted" style="margin:0">验证码已经发到 <b id="codeTo"></b>，邮件标题是「确认注册」。没收到的话看看垃圾邮件。</p>
+      <label class="field"><span>验证码</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="邮件里的数字" required></label>
+      <p class="err" id="cerr" role="alert"></p>
+      <button class="btn hot big" type="submit" id="cgo">完成注册</button>
+      <div class="row" style="justify-content:space-between"><button class="link-btn" type="button" id="resend">重新发送</button><button class="link-btn" type="button" id="back2">换个邮箱</button></div>
     </form>
     <p class="muted" style="font-size:13px;margin:0">登录或注册即表示你看过并同意<a href="privacy.html">隐私说明</a>。</p>
   </section>
@@ -74,6 +86,25 @@ function setMode(m){
   $("go").textContent=m==="in"?"登录":"注册";
   $("emailForm").elements.password.autocomplete=m==="in"?"current-password":"new-password";
   $("forgot").hidden=m!=="in";
+  $("pw2Field").hidden=m!=="up";
+}
+// 显示 / 隐藏密码
+document.querySelectorAll(".eye").forEach(b=>b.addEventListener("click",()=>{
+  const i=b.previousElementSibling, on=i.type==="password";
+  i.type=on?"text":"password"; b.textContent=on?"隐藏":"显示"; b.setAttribute("aria-pressed",on); b.setAttribute("aria-label",on?"隐藏密码":"显示密码");
+}));
+// 注册后切到填验证码
+let codeEmail="", cool=0, coolT=null;
+function startCool(){
+  cool=60; const b=$("resend"); b.disabled=true; clearInterval(coolT);
+  const tick=()=>{ b.textContent=cool>0?`重新发送（${cool} 秒）`:"重新发送"; if(cool<=0){ b.disabled=false; clearInterval(coolT); } cool--; };
+  tick(); coolT=setInterval(tick,1000);
+}
+function askCode(email,sent){
+  codeEmail=email; $("codeTo").textContent=email;
+  $("emailForm").hidden=true; $("codeForm").hidden=false; $("cerr").textContent="";
+  $("codeForm").elements.code.value=""; $("codeForm").elements.code.focus();
+  if(sent) startCool(); else { $("resend").disabled=false; $("resend").textContent="重新发送"; }
 }
 document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
 $("google").href=GP.db.googleUrl(here);
@@ -114,17 +145,37 @@ $("emailForm").addEventListener("submit",async e=>{
   const f=$("emailForm"), email=f.elements.email.value.trim(), pw=f.elements.password.value;
   if(!email||!/.+@.+\..+/.test(email)){ $("err").textContent="填一下邮箱"; return; }
   if(pw.length<8){ $("err").textContent="密码至少 8 位"; return; }
+  if(mode==="up"&&pw!==f.elements.password2.value){ $("err").textContent="两次输入的密码不一样"; f.elements.password2.focus(); return; }
   $("go").disabled=true;
   try{
     if(mode==="in"){ await GP.db.signIn(email,pw); await show(); }
     else{
       const r=await GP.db.signUp(email,pw,here);
       if(r&&r.access_token) await show();
-      else $("err").textContent="注册好了！去邮箱点一下确认链接，就会自动登录。没收到的话看看垃圾邮件。";
+      else askCode(email,true);
     }
-  }catch(x){ $("err").textContent=msg(x); }
+  }catch(x){
+    // 注册过但还没验证邮箱：直接让他填验证码
+    if(mode==="in"&&/not confirmed/i.test(String(x&&x.message))){ askCode(email,false); $("cerr").textContent="邮箱还没验证。点「重新发送」拿一个新验证码。"; }
+    else $("err").textContent=msg(x);
+  }
   $("go").disabled=false;
 });
+$("codeForm").addEventListener("submit",async e=>{
+  e.preventDefault(); $("cerr").textContent="";
+  const code=$("codeForm").elements.code.value.replace(/\s/g,"");
+  if(!/^\d{6,10}$/.test(code)){ $("cerr").textContent="填邮件里的数字验证码"; return; }
+  $("cgo").disabled=true;
+  try{ await GP.db.verifySignup(codeEmail,code); $("codeForm").hidden=true; $("emailForm").hidden=false; await show(); }
+  catch(x){ $("cerr").textContent=/expired|invalid/i.test(String(x&&x.message))?"验证码不对或过期了，点「重新发送」再试":msg(x); }
+  $("cgo").disabled=false;
+});
+$("resend").addEventListener("click",async()=>{
+  $("cerr").textContent="";
+  try{ await GP.db.resendSignup(codeEmail,here); $("cerr").textContent="发好了，看看邮箱。"; startCool(); }
+  catch(x){ $("cerr").textContent=msg(x); }
+});
+$("back2").addEventListener("click",()=>{ $("codeForm").hidden=true; $("emailForm").hidden=false; clearInterval(coolT); });
 $("forgot").addEventListener("click",async()=>{
   const email=$("emailForm").elements.email.value.trim();
   if(!/.+@.+\..+/.test(email)){ $("err").textContent="先在上面填你的邮箱，再点忘记密码"; return; }

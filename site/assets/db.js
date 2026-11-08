@@ -51,6 +51,9 @@ GP.db = (function(){
     fromHash: () => fromHash,
     signIn: async (email, password) => keep(await raw("/auth/v1/token?grant_type=password", {method: "POST", body: {email, password}})),
     signUp: async (email, password, back) => keep(await raw("/auth/v1/signup" + (back ? "?redirect_to=" + encodeURIComponent(back) : ""), {method: "POST", body: {email, password}})),
+    // 注册后邮件里有数字验证码，填回网页就能完成注册并登录
+    verifySignup: async (email, token) => keep(await raw("/auth/v1/verify", {method: "POST", body: {type: "signup", email, token}})),
+    resendSignup: (email, back) => raw("/auth/v1/resend" + (back ? "?redirect_to=" + encodeURIComponent(back) : ""), {method: "POST", body: {type: "signup", email}}),
     googleUrl: back => `${URL_}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(back)}`,
     recover: (email, back) => raw("/auth/v1/recover?redirect_to=" + encodeURIComponent(back), {method: "POST", body: {email}}),
     setPassword: async password => raw("/auth/v1/user", {method: "PUT", body: {password}, token: await fresh()}),

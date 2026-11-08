@@ -147,3 +147,29 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink);box
 .seg-b[aria-selected="true"]{background:var(--paper);color:var(--ink);box-shadow:var(--shadow-1)}
 .work-row{display:flex;flex-direction:column}
 .story{background:var(--paper);border-radius:20px;padding:18px;box-shadow:var(--shadow-1);white-space:pre-wrap;line-height:1.75}
+/* 社区 */
+.post{display:flex;flex-direction:column;gap:12px}
+.post-head{display:flex;align-items:center;gap:10px}
+.post-head img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none}
+.post-head .ph-av{width:40px;height:40px;border-radius:50%;background:var(--chip);display:grid;place-items:center;font-weight:700;flex:none}
+.post-head b{display:block;font-size:15px}
+.post-head .muted{font-size:13px}
+.post-body{white-space:pre-wrap;word-break:break-word;margin:0;line-height:1.7}
+.pics{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;border-radius:14px;overflow:hidden}
+.pics.one{grid-template-columns:1fr}
+.pics.two{grid-template-columns:1fr 1fr}
+.pics a{display:block;aspect-ratio:1;background:var(--chip)}
+.pics.one a{aspect-ratio:auto;max-height:520px}
+.pics img{width:100%;height:100%;object-fit:cover;display:block}
+.cmts{border-top:1px solid var(--line,rgba(0,0,0,.08));padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.cmt{font-size:14px;line-height:1.6;word-break:break-word}
+.cmt b{margin-right:6px}
+.cmt .muted{font-size:12px;margin-left:6px}
+.cform{display:flex;flex-direction:column;gap:8px}
+.cform .split{grid-template-columns:110px 1fr}
+.cform input,.cform textarea{font:inherit}
+.picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.picks .pk{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--chip)}
+.picks .pk img{width:100%;height:100%;object-fit:cover}
+.picks .pk button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:24px;padding:0;cursor:pointer}
+.tip{font-size:13px;background:var(--chip);border-radius:12px;padding:10px 12px;margin:0}

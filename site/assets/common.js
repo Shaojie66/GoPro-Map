@@ -17,7 +17,7 @@ const wrap=document.querySelector(".wrap");
 if(wrap){
   const f=document.createElement("footer");
   f.innerHTML=`<div class="host"><img src="${GP.avatarSrc(GP.host.avatar)}" alt="发起人${GP.host.name}的头像"><div class="hn">发起人 ${GP.host.name}<div class="muted">小红书私信我，拿地图链接、进围观群</div></div></div>
-  <div class="ht">#GoPro流浪计划</div><div>每周更新，在小红书、抖音、B 站搜话题就能找到</div><div><a href="about.html">关于这个计划</a></div>`;
+  <div class="ht">#GoPro流浪计划</div><div>每周更新，在小红书、抖音、B 站搜话题就能找到</div><div><a href="about.html">关于这个计划</a> · <a href="privacy.html">隐私说明</a></div>`;
   wrap.append(f);
 }
 })();

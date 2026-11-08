@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="GoPro 流浪计划网站的隐私说明：我们收集什么、怎么用、怎么删。">
+<title>隐私说明</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="privacy">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">隐私说明</div>
+    <h1>你的信息怎么用</h1>
+    <p class="lede">这是一个留学生之间的非营利小活动，网站只收集办活动必须的信息。</p>
+  </header>
+  <section class="card">
+    <h2 style="margin-top:0">我们收集什么</h2>
+    <ul class="steps">
+      <li>登录账号：你的邮箱；用谷歌登录时还有谷歌账号的名字和头像。</li>
+      <li>你自己填的内容：昵称、评论、报名表里的信息。</li>
+      <li>流浪者发的帖子和照片。</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2 style="margin-top:0">怎么用</h2>
+    <ul class="steps">
+      <li>昵称和头像会显示在你的评论旁边，其他人能看到。</li>
+      <li>邮箱只用来登录、找回密码，不公开，不发广告。</li>
+      <li>报名信息只有发起人能看，用来安排下一期，不会给别人。</li>
+      <li>不卖、不转给任何第三方。</li>
+    </ul>
+  </section>
+  <section class="card">
+    <h2 style="margin-top:0">存在哪里</h2>
+    <p class="muted" style="margin:0">数据存在 Supabase（伦敦机房），网站由 Vercel 托管。</p>
+  </section>
+  <section class="card">
+    <h2 style="margin-top:0">想删掉自己的信息</h2>
+    <p class="muted" style="margin:0">在小红书私信发起人<span id="host"></span>，说一下你的登录邮箱，我会把账号、评论和报名一起删掉。</p>
+  </section>
+  <section class="card">
+    <h2 style="margin-top:0">使用规则</h2>
+    <p class="muted" style="margin:0">友善评论，别发广告、别人的隐私或交接地点。违反的评论会被隐藏，账号可能被停用。</p>
+  </section>
+  <p class="muted">更新于 2026 年 11 月 8 日</p>
+</main>
+<script src="assets/common.js"></script>
+<script>document.getElementById("host").textContent=GP.host.name;</script>
+</body>
+</html>

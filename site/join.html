@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="GoPro 流浪计划：一台相机，一人一周，在英国留学生之间传递。">
+<title>报名下一期</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="join">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">报名</div>
+    <h1>想接相机？</h1>
+    <p class="lede">填一下这张表，我会私信你确认。名额有限，按报名先后和城市安排，没排上的下一期优先。</p>
+  </header>
+
+  <form class="card form" id="f" novalidate>
+    <label class="field"><span>想报哪一期</span>
+      <select name="season" required>
+        <option>GoPro 第二期</option>
+        <option>Action 流浪计划</option>
+        <option>都可以</option>
+      </select></label>
+    <label class="field"><span>你在哪个城市</span>
+      <input name="city" required maxlength="40" placeholder="比如：布里斯托" autocomplete="address-level2"></label>
+    <label class="field"><span>小红书或抖音昵称</span>
+      <input name="nickname" required maxlength="40" placeholder="地图上会显示这个名字"></label>
+    <div class="field"><span>怎么联系你</span>
+      <div class="split">
+        <select name="contact_type" aria-label="联系方式类型"><option>微信</option><option>小红书</option><option>邮箱</option></select>
+        <input name="contact" required maxlength="80" placeholder="微信号 / 小红书号 / 邮箱" aria-label="联系方式">
+      </div></div>
+    <label class="field"><span>哪几周方便拿相机 <em>选填</em></span>
+      <input name="weeks" maxlength="200" placeholder="比如：3 月都行，复活节要回国"></label>
+    <fieldset class="field"><legend>愿意跨城交接吗</legend>
+      <div class="chips">
+        <label><input type="radio" name="can_travel" value="true">愿意</label>
+        <label><input type="radio" name="can_travel" value="false">只在本城</label>
+        <label><input type="radio" name="can_travel" value="" checked>看情况</label>
+      </div></fieldset>
+    <label class="field"><span>想说的话 <em>选填</em></span>
+      <textarea name="note" maxlength="500" rows="3" placeholder="想拍什么、有没有拍摄经验，随便聊聊"></textarea></label>
+    <label class="hp" aria-hidden="true">别填这一栏<input name="website" tabindex="-1" autocomplete="off"></label>
+    <label class="agree"><input type="checkbox" name="agree" required> 这些信息只用来联系我安排相机，只有发起人能看到</label>
+    <p class="err" id="err" role="alert"></p>
+    <button class="btn hot big" type="submit" id="go">提交报名</button>
+  </form>
+
+  <section class="card done" id="done" hidden>
+    <h2>收到啦</h2>
+    <p class="muted" style="margin:0">我会在几天内私信你。也可以先在小红书关注 <b>奶盖</b>，搜 #GoPro流浪计划 看看大家拍了什么。</p>
+  </section>
+</main>
+<script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
+<script>
+const f=document.getElementById("f"), err=document.getElementById("err"), go=document.getElementById("go");
+f.addEventListener("submit", async e=>{
+  e.preventDefault(); err.textContent="";
+  const d=new FormData(f);
+  if(d.get("website")) return; // 机器人会填隐藏栏
+  for(const [k,label] of [["city","城市"],["nickname","昵称"],["contact","联系方式"]]){
+    if(!String(d.get(k)||"").trim()){ err.textContent=`还差${label}没填`; f.elements[k].focus(); return; }
+  }
+  if(!d.get("agree")){ err.textContent="勾选一下最后那句再提交"; return; }
+  const ct=d.get("can_travel");
+  const row={
+    season:d.get("season"), city:d.get("city").trim(), nickname:d.get("nickname").trim(),
+    contact_type:d.get("contact_type"), contact:d.get("contact").trim(),
+    weeks:(d.get("weeks")||"").trim()||null, note:(d.get("note")||"").trim()||null,
+    can_travel: ct==="" ? null : ct==="true",
+  };
+  go.disabled=true; go.textContent="提交中…";
+  try{
+    await GP.db.submitSignup(row);
+    f.hidden=true; document.getElementById("done").hidden=false; window.scrollTo({top:0,behavior:"smooth"});
+  }catch(x){
+    err.textContent="没提交成功，可能是网络问题。稍后再试，或者直接小红书私信奶盖。";
+    go.disabled=false; go.textContent="提交报名";
+  }
+});
+</script>
+</body>
+</html>

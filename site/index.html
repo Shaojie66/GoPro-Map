@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="GoPro 流浪计划：一台相机，一人一周，在英国留学生之间传递。">
+<title>GoPro 流浪计划</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="home">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow" id="season"></div>
+    <h1>GoPro 流浪计划</h1>
+    <p class="lede">一台相机，一人一周，在英国留学生之间传下去。不限题材，拍你普通的一周。我们想让大家看到，不同城市的留学生是怎么生活的。</p>
+  </header>
+
+  <section class="ticket" id="now" aria-live="polite"></section>
+
+  <a class="mapbox mini" href="map.html" aria-label="打开完整地图">
+    <svg id="map" role="img" aria-label="英国地图，标出相机到过的城市"></svg>
+    <span class="btn more">看完整地图</span>
+  </a>
+
+  <section>
+    <h2>最新作品</h2>
+    <div id="latest"></div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin-top:0">想接相机？</h2>
+    <p class="muted" id="joinline"></p>
+    <a class="btn hot big" href="join.html">报名下一期</a>
+  </section>
+</main>
+<script src="assets/map.js"></script>
+<script src="assets/common.js"></script>
+<script>
+document.getElementById("season").textContent=`${GP.season} · 英国 · 一人一周`;
+GP.drawMap(document.getElementById("map"));
+const now=document.getElementById("now");
+const topRow=document.createElement("div"); topRow.className="ticket-top";
+const tag=document.createElement("span"); tag.className="tag";
+const wk=document.createElement("span"); wk.className="week";
+topRow.append(tag,wk);
+const city=document.createElement("div"); city.className="now-city";
+const line=document.createElement("div"); line.className="muted";
+if(GP.cur<0){
+  tag.textContent="即将出发"; tag.classList.add("wait");
+  city.textContent=GP.ZH[GP.launch.city]; line.textContent=`${GP.md(GP.launch.date)} 从这里出发`;
+  now.append(topRow,city,line);
+}else{
+  const s=GP.shown[GP.cur];
+  tag.textContent="相机现在在"; wk.textContent=`第 ${GP.cur+1} 周`;
+  city.textContent=GP.ZH[s.city]; line.textContent="这周拿着相机的是";
+  const go=document.createElement("a"); go.className="btn"; go.href=`stop.html?n=${GP.cur+1}`; go.textContent="看这一站";
+  now.append(topRow,city,line,GP.xhsRow(s),go);
+}
+// 最新作品：从最近的站往前找，最多 3 条
+const latest=[]; for(let i=GP.cur;i>=0&&latest.length<3;i--){ (GP.shown[i].works||[]).forEach(w=>latest.length<3&&latest.push(w)); }
+document.getElementById("latest").append(GP.worksList(latest,"第一周的作品正在拍，周五交接后陆续放上来。"));
+document.getElementById("joinline").textContent = GP.join.open ? `下一期 ${GP.join.opens} 开始，现在就能填表报名，一分钟就好。` : `下一期 ${GP.join.opens} 开始招募，现在可以先在小红书留言报名。`;
+</script>
+</body>
+</html>

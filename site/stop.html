@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="GoPro 流浪计划：一台相机，一人一周，在英国留学生之间传递。">
+<title>这一站</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="stops">
+<main class="wrap" id="main">
+</main>
+<script src="assets/common.js"></script>
+<script>
+const main=document.getElementById("main");
+const n=parseInt(new URLSearchParams(location.search).get("n"),10);
+const s=GP.shown[n-1]; // 只能看到已经开始的站，未来的站不存在于页面里
+const hero=document.createElement("header"); hero.className="hero";
+if(!s){
+  hero.innerHTML=`<h1>这一站还没开始</h1><p class="lede">相机还在路上，等它到了再来看。</p><div><a class="btn" href="stops.html">看已经走过的站</a></div>`;
+  main.prepend(hero);
+}else{
+  document.title=`第 ${n} 站 · ${GP.ZH[s.city]}`;
+  const live=n-1===GP.cur;
+  hero.innerHTML=`<div class="eyebrow">${GP.season} · 第 ${n} 站 · ${GP.md(s.start)} 起${live?" · 正在拍":""}</div><h1></h1>`;
+  hero.querySelector("h1").textContent=GP.ZH[s.city];
+  const holder=document.createElement("section"); holder.className="card";
+  const h=document.createElement("div"); h.className="muted"; h.textContent=live?"这周拿着相机的是":"这一站的持有人";
+  holder.append(h,GP.xhsRow(s));
+  if(s.note){const p=document.createElement("p"); p.textContent=s.note; holder.append(p);}
+  const wsec=document.createElement("section");
+  const h2=document.createElement("h2"); h2.textContent="作品";
+  wsec.append(h2,GP.worksList(s.works,live?"正在拍，交接后放上来。":"作品整理中。"));
+  const nav=document.createElement("div"); nav.className="row";
+  if(n>1) nav.append(Object.assign(document.createElement("a"),{className:"btn",href:`stop.html?n=${n-1}`,textContent:"上一站"}));
+  if(n<GP.shown.length) nav.append(Object.assign(document.createElement("a"),{className:"btn",href:`stop.html?n=${n+1}`,textContent:"下一站"}));
+  nav.append(Object.assign(document.createElement("a"),{className:"btn",href:"map.html",textContent:"回地图"}));
+  main.prepend(hero,holder,wsec,nav);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>报名后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="admin">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">只有发起人能用</div>
+    <h1>报名后台</h1>
+  </header>
+
+  <form class="card form" id="login">
+    <label class="field"><span>邮箱</span><input name="email" type="email" autocomplete="username" required></label>
+    <label class="field"><span>密码</span><input name="password" type="password" autocomplete="current-password" minlength="8" required></label>
+    <p class="err" id="lerr" role="alert"></p>
+    <div class="row">
+      <button class="btn hot big" type="submit">登录</button>
+      <button class="btn big" type="button" id="reg">第一次用：注册</button>
+    </div>
+    <p class="muted" style="margin:0">注册后去邮箱点确认链接（跳转的页面打不开没关系），再回来登录。登录后告诉 Claude，把你的账号加进管理员名单。</p>
+  </form>
+
+  <section id="panel" hidden>
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <span class="muted" id="count"></span>
+      <span class="row"><button class="btn" id="refresh">刷新</button><button class="btn" id="out">退出</button></span>
+    </div>
+    <div id="list" style="display:flex;flex-direction:column;gap:12px"></div>
+  </section>
+</main>
+<script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
+<script>
+const login=document.getElementById("login"), lerr=document.getElementById("lerr");
+const panel=document.getElementById("panel"), list=document.getElementById("list");
+const STATUSES=["新报名","已联系","已确认","这期不排"];
+const travel=v=>v===true?"愿意跨城":v===false?"只在本城":"看情况";
+function item(r){
+  const c=document.createElement("article"); c.className="card admin-item";
+  const top=document.createElement("div"); top.className="top";
+  const name=document.createElement("b"); name.textContent=`${r.nickname} · ${r.city}`;
+  const sel=document.createElement("select"); sel.setAttribute("aria-label","状态");
+  STATUSES.forEach(s=>{const o=document.createElement("option"); o.textContent=s; o.selected=s===r.status; sel.append(o);});
+  sel.addEventListener("change",async()=>{ sel.disabled=true; try{ await GP.db.setStatus(r.id,sel.value); }catch(e){ alert("没改成功："+e.message); sel.value=r.status; } sel.disabled=false; });
+  top.append(name,sel); c.append(top);
+  const kv=(k,v)=>{ if(!v) return; const d=document.createElement("div"); d.className="kv"; const b=document.createElement("b"); b.textContent=k+"："; d.append(b,document.createTextNode(v)); c.append(d); };
+  kv("报名", r.season); kv(r.contact_type, r.contact); kv("时间", r.weeks); kv("交接", travel(r.can_travel)); kv("留言", r.note);
+  kv("提交于", new Date(r.created_at).toLocaleString("zh-CN",{timeZone:"Europe/London"}));
+  return c;
+}
+async function load(){
+  list.replaceChildren(Object.assign(document.createElement("div"),{className:"empty",textContent:"加载中…"}));
+  try{
+    const rows=await GP.db.listSignups();
+    document.getElementById("count").textContent=`共 ${rows.length} 人报名`;
+    list.replaceChildren(...(rows.length?rows.map(item):[Object.assign(document.createElement("div"),{className:"empty",textContent:"还没有人报名，或者你的账号还不在管理员名单里。"})]));
+  }catch(e){
+    if(e.status===401){ GP.db.signOut(); show(); lerr.textContent="登录过期了，再登录一次。"; return; }
+    list.replaceChildren(Object.assign(document.createElement("div"),{className:"empty",textContent:"读取失败："+e.message}));
+  }
+}
+function show(){ const on=!!GP.db.session(); login.hidden=on; panel.hidden=!on; if(on) load(); }
+login.addEventListener("submit",async e=>{
+  e.preventDefault(); lerr.textContent="";
+  const d=new FormData(login);
+  try{ await GP.db.signIn(d.get("email"),d.get("password")); show(); }
+  catch(x){ lerr.textContent = x.message.includes("not confirmed") ? "邮箱还没确认，去邮箱点一下确认链接。" : "邮箱或密码不对。"; }
+});
+document.getElementById("reg").addEventListener("click",async()=>{
+  lerr.textContent="";
+  const d=new FormData(login);
+  if(!login.reportValidity()) return;
+  try{ await GP.db.signUp(d.get("email"),d.get("password")); lerr.textContent="注册好了，去邮箱点确认链接，再回来登录。"; }
+  catch(x){ lerr.textContent="注册没成功："+x.message; }
+});
+document.getElementById("out").addEventListener("click",()=>{ GP.db.signOut(); show(); });
+document.getElementById("refresh").addEventListener("click",load);
+show();
+</script>
+</body>
+</html>

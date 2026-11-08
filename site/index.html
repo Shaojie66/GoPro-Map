@@ -39,6 +39,7 @@
 </main>
 <script src="assets/map.js"></script>
 <script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
 <script>
 document.getElementById("season").textContent=`${GP.season} · 英国 · 一人一周`;
 GP.drawMap(document.getElementById("map"));
@@ -62,7 +63,14 @@ if(GP.cur<0){
 }
 // 最新作品：从最近的站往前找，最多 3 条
 const latest=[]; for(let i=GP.cur;i>=0&&latest.length<3;i--){ (GP.shown[i].works||[]).forEach(w=>latest.length<3&&latest.push(w)); }
-document.getElementById("latest").append(GP.worksList(latest,"第一周的作品正在拍，周五交接后陆续放上来。"));
+const latestBox=document.getElementById("latest");
+latestBox.append(GP.worksList(latest,"第一周的作品正在拍，周五交接后陆续放上来。"));
+// 加上审核通过的投稿（只取已经开始的站）
+GP.db.approved(GP.season).then(rows=>{
+  const extra=rows.filter(r=>r.kind==="作品"&&r.url&&r.stop_no<=GP.shown.length).map(r=>({platform:r.platform||"其他",url:r.url,title:r.title||`第 ${r.stop_no} 站 · ${GP.ZH[GP.shown[r.stop_no-1].city]}`}));
+  const all=[...extra,...latest].slice(0,3);
+  if(all.length) latestBox.replaceChildren(GP.worksList(all,""));
+}).catch(()=>{});
 document.getElementById("joinline").textContent = GP.join.open ? `下一期 ${GP.join.opens} 开始，现在就能填表报名，一分钟就好。` : `下一期 ${GP.join.opens} 开始招募，现在可以先在小红书留言报名。`;
 </script>
 </body>

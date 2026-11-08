@@ -15,15 +15,15 @@
 <main class="wrap">
   <header class="hero">
     <div class="eyebrow" id="eyebrow">持有人专属</div>
-    <h1 id="h1">这周拍到了什么？</h1>
-    <p class="lede">发一条动态到社区，大家会在下面评论。这个链接只给你，别转发。</p>
+    <h1 id="h1">想和大家分享点什么？</h1>
+    <p class="lede">发一条动态到社区，大家会在下面评论。交接以后也能一直用，这个链接只给你，别转发。</p>
   </header>
 
   <div class="empty" id="state">正在打开你的专属链接…</div>
 
   <form class="card form" id="f" novalidate hidden>
     <label class="field"><span>想说的话</span>
-      <textarea name="body" maxlength="2000" rows="6" placeholder="今天去了哪、拍到了什么、有什么好玩的事"></textarea></label>
+      <textarea name="body" maxlength="2000" rows="6" placeholder="这周拍到了什么、交接后的感想、想对下一位说的话"></textarea></label>
     <div class="field"><span>照片 <em>选填，最多 9 张</em></span>
       <div class="picks" id="picks"></div>
       <div><label class="btn" for="file">选照片</label><input type="file" id="file" accept="image/*" multiple hidden></div>
@@ -87,10 +87,10 @@ $("file").addEventListener("change",async e=>{
   if(!info){ state.textContent="这个链接已经失效了。需要的话私信奶盖。"; return; }
   const s=GP.stops[info.stop_no-1];
   $("eyebrow").textContent=`${info.season} · 第 ${info.stop_no} 站${s?" · "+GP.ZH[s.city]:""}`;
-  if(info.label) $("h1").textContent=`${info.label}，这周拍到了什么？`;
+  if(info.label) $("h1").textContent=`${info.label}，想和大家分享点什么？`;
   $("towork").href=`submit.html?k=${token}`; $("again").href=location.href;
   $("more").hidden=false;
-  if(!info.can_post){ state.textContent="相机已经交给下一位了，这个链接不能再发帖。你还可以投作品链接，或者去社区评论。"; return; }
+  if(!info.can_post){ state.textContent="这个链接现在不能发帖。需要的话私信奶盖。"; return; }
   state.hidden=true; f.hidden=false;
 })();
 

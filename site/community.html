@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="GoPro 流浪计划社区：每周拿着相机的同学在这里分享，大家一起评论。">
+<meta name="description" content="GoPro 流浪计划社区：拿过相机的同学在这里分享，大家一起评论。">
 <title>社区</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,8 +15,8 @@
 <main class="wrap">
   <header class="hero">
     <div class="eyebrow" id="eyebrow">社区</div>
-    <h1 id="h1">相机在谁手上，谁来讲</h1>
-    <p class="lede">只有这周拿着相机的同学能发帖，大家都可以在下面评论、提问、接龙。</p>
+    <h1 id="h1">拿过相机的人来讲</h1>
+    <p class="lede">只有拿过相机的流浪者能发帖，大家都可以在下面评论、提问、接龙。</p>
   </header>
   <div id="feed" class="stack"><div class="empty">加载中…</div></div>
 </main>
@@ -88,7 +88,7 @@ function postCard(p, cmts){
     const posts=(await GP.db.posts(GP.season, only)).filter(p=>p.stop_no<=GP.shown.length);
     const cmts=await GP.db.comments(posts.map(p=>p.id));
     if(!posts.length){
-      feed.replaceChildren(el("div","empty","还没有帖子。这周拿相机的同学发了之后会出现在这里。"));
+      feed.replaceChildren(el("div","empty","还没有帖子。拿过相机的同学发了之后会出现在这里。"));
     }else{
       feed.replaceChildren(...posts.map(p=>postCard(p,cmts.filter(c=>c.post_id===p.id))));
     }

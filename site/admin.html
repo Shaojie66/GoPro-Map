@@ -30,11 +30,34 @@
   </form>
 
   <section id="panel" hidden>
-    <div class="row" style="justify-content:space-between;margin-bottom:12px">
-      <span class="muted" id="count"></span>
+    <div class="row" style="justify-content:space-between;margin-bottom:16px">
+      <div class="seg" role="tablist">
+        <button class="seg-b" role="tab" data-tab="signups" aria-selected="true">报名</button>
+        <button class="seg-b" role="tab" data-tab="subs" aria-selected="false">投稿审核</button>
+        <button class="seg-b" role="tab" data-tab="links" aria-selected="false">投稿链接</button>
+      </div>
       <span class="row"><button class="btn" id="refresh">刷新</button><button class="btn" id="out">退出</button></span>
     </div>
-    <div id="list" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div data-pane="signups">
+      <p class="muted" id="count" style="margin:0 0 12px"></p>
+      <div id="list" class="stack"></div>
+    </div>
+    <div data-pane="subs" hidden>
+      <p class="muted" style="margin:0 0 12px">通过的作品会显示在对应站点页上；「不展示」的只有你能看到。</p>
+      <div id="subs" class="stack"></div>
+    </div>
+    <div data-pane="links" hidden>
+      <form class="card form" id="newlink" style="margin-bottom:16px">
+        <h2 style="margin:0">给持有人生成投稿链接</h2>
+        <div class="split" style="grid-template-columns:110px 1fr">
+          <input name="stop" type="number" min="1" max="200" required placeholder="第几站" aria-label="第几站">
+          <input name="label" maxlength="40" placeholder="持有人昵称（会显示在投稿页上）" aria-label="持有人昵称">
+        </div>
+        <button class="btn hot" type="submit">生成链接</button>
+        <p class="muted" style="margin:0">把链接私信给这一站的持有人。不要发在群里或帖子里，拿到链接的人都能投稿。</p>
+      </form>
+      <div id="links" class="stack"></div>
+    </div>
   </section>
 </main>
 <script src="assets/common.js"></script>
@@ -68,6 +91,61 @@ async function load(){
     list.replaceChildren(Object.assign(document.createElement("div"),{className:"empty",textContent:"读取失败："+e.message}));
   }
 }
+// ---- 投稿审核 ----
+const SUB_ST=["待审核","已通过","不展示"];
+function subItem(r){
+  const c=document.createElement("article"); c.className="card admin-item";
+  const top=document.createElement("div"); top.className="top";
+  const name=document.createElement("b"); name.textContent=`第 ${r.stop_no} 站 · ${r.kind}${r.platform?" · "+r.platform:""}`;
+  const sel=document.createElement("select"); sel.setAttribute("aria-label","审核状态");
+  SUB_ST.forEach(s=>{const o=document.createElement("option"); o.textContent=s; o.selected=s===r.status; sel.append(o);});
+  sel.addEventListener("change",async()=>{ sel.disabled=true; try{ await GP.db.setSubmissionStatus(r.id,sel.value); r.status=sel.value; }catch(e){ alert("没改成功："+e.message); sel.value=r.status; } sel.disabled=false; });
+  top.append(name,sel); c.append(top);
+  if(r.url){ const a=document.createElement("a"); a.href=r.url; a.target="_blank"; a.rel="noopener noreferrer"; a.className="kv"; a.textContent=r.title?`${r.title} ↗`:r.url; c.append(a); }
+  if(r.note){ const p=document.createElement("div"); p.className="kv"; p.style.whiteSpace="pre-wrap"; p.textContent=r.note; c.append(p); }
+  const t=document.createElement("div"); t.className="kv"; t.textContent=new Date(r.created_at).toLocaleString("zh-CN",{timeZone:"Europe/London"}); c.append(t);
+  return c;
+}
+async function loadSubs(){
+  const box=document.getElementById("subs");
+  box.replaceChildren(Object.assign(document.createElement("div"),{className:"empty",textContent:"加载中…"}));
+  try{ const rows=await GP.db.listSubmissions(); rows.sort((a,b)=>(a.status==="待审核"?0:1)-(b.status==="待审核"?0:1));
+    box.replaceChildren(...(rows.length?rows.map(subItem):[Object.assign(document.createElement("div"),{className:"empty",textContent:"还没有投稿。"})])); }
+  catch(e){ box.replaceChildren(Object.assign(document.createElement("div"),{className:"empty",textContent:"读取失败："+e.message})); }
+}
+// ---- 投稿链接 ----
+const linkUrl=t=>new URL(`submit.html?k=${t}`, location.href).href;
+function linkItem(l){
+  const c=document.createElement("article"); c.className="card admin-item";
+  const top=document.createElement("div"); top.className="top";
+  const name=document.createElement("b"); name.textContent=`第 ${l.stop_no} 站${l.label?" · "+l.label:""}${l.active?"":"（已停用）"}`;
+  const tog=document.createElement("button"); tog.className="btn"; tog.textContent=l.active?"停用":"恢复";
+  tog.addEventListener("click",async()=>{ try{ await GP.db.setLinkActive(l.token,!l.active); l.active=!l.active; c.replaceWith(linkItem(l)); }catch(e){ alert("没改成功："+e.message); } });
+  top.append(name,tog); c.append(top);
+  const v=document.createElement("div"); v.className="kv"; v.style.wordBreak="break-all"; v.textContent=linkUrl(l.token);
+  const row=document.createElement("div"); row.className="row"; row.append(GP.copyBtn(linkUrl(l.token),v));
+  c.append(v,row); return c;
+}
+async function loadLinks(){
+  const box=document.getElementById("links");
+  try{ const rows=await GP.db.listLinks(); box.replaceChildren(...(rows.length?rows.map(linkItem):[Object.assign(document.createElement("div"),{className:"empty",textContent:"还没有生成过链接。"})])); }
+  catch(e){ box.replaceChildren(Object.assign(document.createElement("div"),{className:"empty",textContent:"读取失败："+e.message})); }
+}
+document.getElementById("newlink").addEventListener("submit",async e=>{
+  e.preventDefault(); const d=new FormData(e.target);
+  const n=parseInt(d.get("stop"),10); if(!(n>=1)) return;
+  try{ await GP.db.createLink(n, GP.season, (d.get("label")||"").trim()||null); e.target.reset(); loadLinks(); }
+  catch(x){ alert("没生成成功："+x.message); }
+});
+// ---- 标签切换 ----
+let tab="signups";
+const loaders={signups:()=>load(), subs:loadSubs, links:loadLinks};
+document.querySelectorAll(".seg-b").forEach(b=>b.addEventListener("click",()=>{
+  tab=b.dataset.tab;
+  document.querySelectorAll(".seg-b").forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll("[data-pane]").forEach(p=>p.hidden=p.dataset.pane!==tab);
+  loaders[tab]();
+}));
 function show(){ const on=!!GP.db.session(); login.hidden=on; panel.hidden=!on; if(on) load(); }
 login.addEventListener("submit",async e=>{
   e.preventDefault(); lerr.textContent="";
@@ -83,7 +161,7 @@ document.getElementById("reg").addEventListener("click",async()=>{
   catch(x){ lerr.textContent="注册没成功："+x.message; }
 });
 document.getElementById("out").addEventListener("click",()=>{ GP.db.signOut(); show(); });
-document.getElementById("refresh").addEventListener("click",load);
+document.getElementById("refresh").addEventListener("click",()=>loaders[tab]());
 show();
 </script>
 </body>

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>投稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="submit">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow" id="eyebrow">投稿</div>
+    <h1 id="h1">把你这一站的作品放上来</h1>
+    <p class="lede">贴上你发在小红书、抖音或 B 站的作品链接，再写几句这一周的感受。奶盖看过之后，会放到你这一站的页面上。</p>
+  </header>
+
+  <div class="empty" id="state">正在打开你的专属投稿链接…</div>
+
+  <form class="card form" id="f" novalidate hidden>
+    <div class="field"><span>作品链接</span>
+      <div id="works" style="display:flex;flex-direction:column;gap:12px"></div>
+      <div><button class="btn" type="button" id="add">再加一条</button></div>
+    </div>
+    <label class="field"><span>这一周想说的话 <em>选填，会显示在站点页上</em></span>
+      <textarea name="note" maxlength="800" rows="5" placeholder="这一周拍了什么、印象最深的一刻、想对下一位说的话"></textarea></label>
+    <p class="err" id="err" role="alert"></p>
+    <button class="btn hot big" type="submit" id="go">提交</button>
+  </form>
+
+  <section class="card" id="done" hidden>
+    <h2>收到啦，谢谢你</h2>
+    <p class="muted" style="margin:0">审核通过后会出现在你这一站的页面上。以后想补充，用同一个链接再投就行。</p>
+    <div class="row" style="margin-top:14px"><a class="btn" id="again" href="">再投一条</a><a class="btn" id="mystop" href="stops.html">看看我的站</a></div>
+  </section>
+</main>
+<script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
+<script>
+const token=new URLSearchParams(location.search).get("k")||"";
+const state=document.getElementById("state"), f=document.getElementById("f"), err=document.getElementById("err"), go=document.getElementById("go");
+const works=document.getElementById("works");
+let info=null;
+function workRow(){
+  const r=document.createElement("div"); r.className="work-row";
+  r.innerHTML=`<div class="split"><select aria-label="平台"><option>小红书</option><option>抖音</option><option>B站</option><option>其他</option></select>
+    <input type="url" inputmode="url" maxlength="300" placeholder="粘贴作品链接" aria-label="作品链接"></div>
+    <input maxlength="80" placeholder="标题（选填），比如：布里斯托的雨天" aria-label="作品标题" style="margin-top:8px">`;
+  works.append(r);
+}
+// 小红书/抖音的分享文案里常夹着链接，自动把网址抠出来
+const pickUrl=s=>{ const m=String(s||"").match(/https?:\/\/[^\s，。]+/); return m?m[0]:""; };
+(async()=>{
+  if(!/^[0-9a-f-]{36}$/i.test(token)){ state.textContent="这个投稿链接不完整。请用奶盖发给你的链接打开。"; return; }
+  try{ info=await GP.db.linkInfo(token); }catch(e){ state.textContent="打不开投稿链接，可能是网络问题，稍后再试。"; return; }
+  if(!info){ state.textContent="这个投稿链接已经失效了。需要的话私信奶盖要一个新的。"; return; }
+  const s=GP.stops[info.stop_no-1];
+  document.getElementById("eyebrow").textContent=`${info.season} · 第 ${info.stop_no} 站${s?" · "+GP.ZH[s.city]:""}`;
+  if(info.label) document.getElementById("h1").textContent=`${info.label}，把你这一站的作品放上来`;
+  document.getElementById("mystop").href=`stop.html?n=${info.stop_no}`;
+  document.getElementById("again").href=location.href;
+  state.hidden=true; f.hidden=false; workRow();
+})();
+document.getElementById("add").addEventListener("click",()=>{ if(works.children.length<6) workRow(); });
+f.addEventListener("submit",async e=>{
+  e.preventDefault(); err.textContent="";
+  const rows=[];
+  for(const r of works.children){
+    const [sel,url,title]=r.querySelectorAll("select,input");
+    const raw=url.value.trim(); if(!raw) continue;
+    const u=pickUrl(raw); if(!u){ err.textContent="有一条链接看起来不对，要以 http 开头"; url.focus(); return; }
+    rows.push({token, stop_no:info.stop_no, season:info.season, kind:"作品", platform:sel.value, url:u, title:title.value.trim()||null});
+  }
+  const note=f.elements.note.value.trim();
+  if(note) rows.push({token, stop_no:info.stop_no, season:info.season, kind:"自述", note});
+  if(!rows.length){ err.textContent="至少贴一条作品链接，或者写几句话"; return; }
+  go.disabled=true; go.textContent="提交中…";
+  try{ await GP.db.submitWork(rows); f.hidden=true; document.getElementById("done").hidden=false; window.scrollTo({top:0,behavior:"smooth"}); }
+  catch(x){ err.textContent="没提交成功，稍后再试，或者直接把链接私信给奶盖。"; go.disabled=false; go.textContent="提交"; }
+});
+</script>
+</body>
+</html>

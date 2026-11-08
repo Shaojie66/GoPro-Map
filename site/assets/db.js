@@ -25,6 +25,20 @@ GP.db = (function(){
     signOut: () => { session = null; store.set(null); },
     session: () => session,
     listSignups: () => req("/rest/v1/signups?select=*&order=created_at.desc", {auth: true}),
+    // 投稿
+    linkInfo: async t => (await req("/rest/v1/rpc/link_info", {method: "POST", body: {t}}))[0] || null,
+    // 一次提交多条时，每条的字段必须一样，缺的补 null
+    submitWork: rows => {
+      const keys = ["token","stop_no","season","kind","platform","url","title","note"];
+      const body = rows.map(r => Object.fromEntries(keys.map(k => [k, r[k] ?? null])));
+      return req("/rest/v1/submissions", {method: "POST", body, prefer: "return=minimal"});
+    },
+    approved: (season, stopNo) => req(`/rest/v1/submissions?select=stop_no,kind,platform,url,title,note,created_at&status=eq.${encodeURIComponent("已通过")}&season=eq.${encodeURIComponent(season)}` + (stopNo ? `&stop_no=eq.${stopNo}` : "") + "&order=created_at.desc"),
+    listSubmissions: () => req("/rest/v1/submissions?select=*&order=created_at.desc", {auth: true}),
+    setSubmissionStatus: (id, status) => req(`/rest/v1/submissions?id=eq.${encodeURIComponent(id)}`, {method: "PATCH", body: {status}, auth: true, prefer: "return=minimal"}),
+    listLinks: () => req("/rest/v1/holder_links?select=*&order=stop_no.desc", {auth: true}),
+    createLink: async (stop_no, season, label) => (await req("/rest/v1/holder_links", {method: "POST", body: {stop_no, season, label}, auth: true, prefer: "return=representation"}))[0],
+    setLinkActive: (token, active) => req(`/rest/v1/holder_links?token=eq.${encodeURIComponent(token)}`, {method: "PATCH", body: {active}, auth: true, prefer: "return=minimal"}),
     setStatus: (id, status) => req(`/rest/v1/signups?id=eq.${encodeURIComponent(id)}`, {method: "PATCH", body: {status}, auth: true, prefer: "return=minimal"}),
   };
 })();

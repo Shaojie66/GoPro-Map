@@ -15,6 +15,7 @@
 <main class="wrap" id="main">
 </main>
 <script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
 <script>
 const main=document.getElementById("main");
 const n=parseInt(new URLSearchParams(location.search).get("n"),10);
@@ -34,12 +35,27 @@ if(!s){
   if(s.note){const p=document.createElement("p"); p.textContent=s.note; holder.append(p);}
   const wsec=document.createElement("section");
   const h2=document.createElement("h2"); h2.textContent="作品";
-  wsec.append(h2,GP.worksList(s.works,live?"正在拍，交接后放上来。":"作品整理中。"));
+  const wbox=document.createElement("div");
+  wbox.append(GP.worksList(s.works,live?"正在拍，交接后放上来。":"作品整理中。"));
+  wsec.append(h2,wbox);
+  const story=document.createElement("section"); story.hidden=true;
+  // 审核通过的投稿：作品链接并进列表，自述单独显示
+  GP.db.approved(GP.season,n).then(rows=>{
+    const extra=rows.filter(r=>r.kind==="作品"&&r.url).map(r=>({platform:r.platform||"其他",url:r.url,title:r.title}));
+    const all=[...(s.works||[]),...extra];
+    if(all.length) wbox.replaceChildren(GP.worksList(all,""));
+    const notes=rows.filter(r=>r.kind==="自述"&&r.note);
+    if(notes.length){
+      const h=document.createElement("h2"); h.textContent=`${s.xhs||"持有人"}想说`;
+      story.append(h,...notes.map(r=>Object.assign(document.createElement("div"),{className:"story",textContent:r.note})));
+      story.hidden=false;
+    }
+  }).catch(()=>{});
   const nav=document.createElement("div"); nav.className="row";
   if(n>1) nav.append(Object.assign(document.createElement("a"),{className:"btn",href:`stop.html?n=${n-1}`,textContent:"上一站"}));
   if(n<GP.shown.length) nav.append(Object.assign(document.createElement("a"),{className:"btn",href:`stop.html?n=${n+1}`,textContent:"下一站"}));
   nav.append(Object.assign(document.createElement("a"),{className:"btn",href:"map.html",textContent:"回地图"}));
-  main.prepend(hero,holder,wsec,nav);
+  main.prepend(hero,holder,wsec,story,nav);
 }
 </script>
 </body>

@@ -55,11 +55,11 @@
       <form class="card form" id="newlink" style="margin-bottom:16px">
         <h2 style="margin:0">给持有人生成专属链接</h2>
         <div class="split" style="grid-template-columns:110px 1fr">
-          <input name="stop" type="number" min="1" max="200" required placeholder="第几站" aria-label="第几站">
+          <input name="stop" type="number" min="0" max="200" required placeholder="第几站" aria-label="第几站（0 是发起人自己）">
           <input name="label" maxlength="40" placeholder="持有人昵称（会显示在投稿页上）" aria-label="持有人昵称">
         </div>
         <button class="btn hot" type="submit">生成链接</button>
-        <p class="muted" style="margin:0">把链接私信给这一站的持有人，用它发社区帖子、投作品，交接后也能一直用。不要发在群里，拿到链接的人都能用；有人不该再发了就点「停用」。</p>
+        <p class="muted" style="margin:0">把链接私信给这一站的持有人，用它发社区帖子、投作品，交接后也能一直用。不要发在群里，拿到链接的人都能用；有人不该再发了就点「停用」。站号填 0 生成的是你自己的发帖链接，帖子会显示成发起人。</p>
       </form>
       <div id="links" class="stack"></div>
     </div>
@@ -123,7 +123,7 @@ const linkUrl=t=>new URL(`post.html?k=${t}`, location.href).href;
 function linkItem(l){
   const c=document.createElement("article"); c.className="card admin-item";
   const top=document.createElement("div"); top.className="top";
-  const name=document.createElement("b"); name.textContent=`第 ${l.stop_no} 站${l.label?" · "+l.label:""}${l.active?"":"（已停用）"}`;
+  const name=document.createElement("b"); name.textContent=`${l.stop_no===0?"发起人":`第 ${l.stop_no} 站`}${l.label?" · "+l.label:""}${l.active?"":"（已停用）"}`;
   const tog=document.createElement("button"); tog.className="btn"; tog.textContent=l.active?"停用":"恢复";
   tog.addEventListener("click",async()=>{ try{ await GP.db.setLinkActive(l.token,!l.active); l.active=!l.active; c.replaceWith(linkItem(l)); }catch(e){ alert("没改成功："+e.message); } });
   top.append(name,tog); c.append(top);
@@ -138,7 +138,7 @@ async function loadLinks(){
 }
 document.getElementById("newlink").addEventListener("submit",async e=>{
   e.preventDefault(); const d=new FormData(e.target);
-  const n=parseInt(d.get("stop"),10); if(!(n>=1)) return;
+  const n=parseInt(d.get("stop"),10); if(!(n>=0)) return;
   try{ await GP.db.createLink(n, GP.season, (d.get("label")||"").trim()||null); e.target.reset(); loadLinks(); }
   catch(x){ alert("没生成成功："+x.message); }
 });
@@ -160,7 +160,7 @@ async function loadPosts(){
       const s=GP.stops[p.stop_no-1]||{};
       const c=document.createElement("article"); c.className="card admin-item";
       const top=document.createElement("div"); top.className="top";
-      const name=document.createElement("b"); name.textContent=`第 ${p.stop_no} 站 · ${s.xhs||"持有人"} · ${new Date(p.created_at).toLocaleString("zh-CN",{timeZone:"Europe/London"})}`;
+      const name=document.createElement("b"); name.textContent=`${p.stop_no===0?"发起人":`第 ${p.stop_no} 站 · ${s.xhs||"持有人"}`} · ${new Date(p.created_at).toLocaleString("zh-CN",{timeZone:"Europe/London"})}`;
       top.append(name,visSel(p.status,v=>GP.db.setPostStatus(p.id,v))); c.append(top);
       const b=document.createElement("div"); b.className="kv"; b.style.whiteSpace="pre-wrap"; b.textContent=p.body; c.append(b);
       if(p.images.length){ const d=document.createElement("div"); d.className="kv"; d.textContent=`${p.images.length} 张照片`; c.append(d); }

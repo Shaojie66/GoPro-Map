@@ -86,10 +86,10 @@ $("file").addEventListener("change",async e=>{
   try{ info=await GP.db.holderInfo(token); }catch(e){ state.textContent="打不开，可能是网络问题，稍后再试。"; return; }
   if(!info){ state.textContent="这个链接已经失效了。需要的话私信奶盖。"; return; }
   const s=GP.stops[info.stop_no-1];
-  $("eyebrow").textContent=`${info.season} · 第 ${info.stop_no} 站${s?" · "+GP.ZH[s.city]:""}`;
+  $("eyebrow").textContent=info.stop_no===0?`发起人 ${GP.host.name}`:`${info.season} · 第 ${info.stop_no} 站${s?" · "+GP.ZH[s.city]:""}`;
   if(info.label) $("h1").textContent=`${info.label}，想和大家分享点什么？`;
   $("towork").href=`submit.html?k=${token}`; $("again").href=location.href;
-  $("more").hidden=false;
+  $("more").hidden=info.stop_no===0;
   if(!info.can_post){ state.textContent="这个链接现在不能发帖。需要的话私信奶盖。"; return; }
   state.hidden=true; f.hidden=false;
 })();

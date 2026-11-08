@@ -83,7 +83,7 @@ document.getElementById("joinline").textContent = GP.join.open ? `下一期 ${GP
 GP.db.posts(GP.season).then(ps=>{
   const p=ps.find(x=>x.stop_no<=GP.shown.length); if(!p) return;
   const s=GP.stops[p.stop_no-1]||{}, box=document.getElementById("lastpost");
-  const who=document.createElement("div"); who.className="muted"; who.textContent=`${s.xhs||"持有人"} · 第 ${p.stop_no} 站 · ${GP.ZH[s.city]||""}`;
+  const who=document.createElement("div"); who.className="muted"; who.textContent=p.stop_no===0?`发起人 ${GP.host.name}`:`${s.xhs||"持有人"} · 第 ${p.stop_no} 站 · ${GP.ZH[s.city]||""}`;
   const b=document.createElement("p"); b.className="post-body"; b.style.margin="6px 0 0"; b.textContent=p.body.length>90?p.body.slice(0,90)+"…":p.body;
   const more=document.createElement("span"); more.className="btn"; more.style.marginTop="12px"; more.textContent="去社区看看";
   box.replaceChildren(who,b,more);

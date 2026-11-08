@@ -19,7 +19,12 @@
     <p class="lede">填一下这张表，我会私信你确认。名额有限，按报名先后和城市安排，没排上的下一期优先。</p>
   </header>
 
-  <form class="card form" id="f" novalidate>
+  <section class="card signin-card" id="needLogin" hidden>
+    <span>报名前先登录一下，方便之后联系你、查看报名进度。</span>
+    <a class="btn hot" href="login.html?next=join.html">登录 / 注册</a>
+  </section>
+  <p class="muted" id="asWho" hidden style="margin:0"></p>
+  <form class="card form" id="f" novalidate hidden>
     <label class="field"><span>想报哪一期</span>
       <select name="season" required>
         <option>GoPro 第二期</option>
@@ -60,6 +65,15 @@
 <script src="assets/db.js"></script>
 <script>
 const f=document.getElementById("f"), err=document.getElementById("err"), go=document.getElementById("go");
+// 报名要先登录
+(async()=>{
+  const u=await GP.db.user();
+  if(!u){ document.getElementById("needLogin").hidden=false; return; }
+  let prof=null; try{ prof=await GP.db.profile(u.id); }catch(e){}
+  const w=document.getElementById("asWho"); w.textContent=`用「${GP.db.nameOf(u,prof)}」${u.email?`（${u.email}）`:""}的账号报名`; w.hidden=false;
+  f.hidden=false;
+  if(u.email){ f.elements.contact_type.value="邮箱"; f.elements.contact.placeholder=u.email; }
+})();
 f.addEventListener("submit", async e=>{
   e.preventDefault(); err.textContent="";
   const d=new FormData(f);
@@ -80,7 +94,7 @@ f.addEventListener("submit", async e=>{
     await GP.db.submitSignup(row);
     f.hidden=true; document.getElementById("done").hidden=false; window.scrollTo({top:0,behavior:"smooth"});
   }catch(x){
-    err.textContent="没提交成功，可能是网络问题。稍后再试，或者直接小红书私信奶盖。";
+    err.textContent = x.status===401 ? "登录过期了，刷新页面重新登录再提交。" : "没提交成功，可能是网络问题。稍后再试，或者直接小红书私信奶盖。";
     go.disabled=false; go.textContent="提交报名";
   }
 });

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="GoPro 流浪计划：一台相机，一人一周，在英国留学生之间传递。">
+<title>流浪地图</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="map">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">相机走过的路</div>
+    <h1>流浪地图</h1>
+    <p class="lede">只显示相机去过的城市和它现在在哪。下一站去哪是秘密，等交接那天揭晓。</p>
+  </header>
+  <section class="mapbox"><svg id="map" role="img" aria-label="英国地图，标出相机到过的城市"></svg></section>
+  <div class="legend"><span><i style="background:var(--pin-done)"></i>相机来过</span><span><i style="background:var(--pin)"></i>相机现在在这</span><span><i style="background:var(--paper);border-style:dashed;border-color:var(--pin)"></i>下一站去哪？保密</span></div>
+  <div class="card" id="citycard">点一下地图上的城市，看看是谁在那里拍。</div>
+</main>
+<script src="assets/map.js"></script>
+<script src="assets/common.js"></script>
+<script>
+const card=document.getElementById("citycard");
+GP.drawMap(document.getElementById("map"),{onSelect(c){
+  card.replaceChildren();
+  const b=document.createElement("h2"); b.style.marginTop="0"; b.textContent=GP.ZH[c]; card.append(b);
+  const here=GP.shown.map((s,i)=>({s,i})).filter(o=>o.s.city===c);
+  if(!here.length){ const d=document.createElement("div"); d.textContent=`${GP.md(GP.launch.date)} 从这里出发`; card.append(d); return; }
+  here.forEach(({s,i})=>{
+    const d=document.createElement("div"); d.className="muted"; d.textContent=`第 ${i+1} 站${i===GP.cur?" · 正在拍":""}`;
+    const a=document.createElement("a"); a.className="btn"; a.href=`stop.html?n=${i+1}`; a.textContent="看这一站";
+    const r=document.createElement("div"); r.className="row"; r.style.margin="6px 0 12px"; r.append(a);
+    card.append(d,GP.xhsRow(s),r);
+  });
+}});
+</script>
+</body>
+</html>

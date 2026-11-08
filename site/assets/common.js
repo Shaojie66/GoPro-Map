@@ -1,7 +1,7 @@
 // 全站共用：导航、页脚、小红书卡片、作品列表。
 (function(){
 const page=document.body.dataset.page;
-const tabs=[["index.html","首页","home"],["map.html","地图","map"],["stops.html","每一站","stops"],["about.html","关于","about"],["join.html","报名","join"]];
+const tabs=[["index.html","首页","home"],["map.html","地图","map"],["stops.html","每一站","stops"],["community.html","社区","community"],["join.html","报名","join"]];
 const nav=document.createElement("nav"); nav.className="nav"; nav.setAttribute("aria-label","主导航");
 const inner=document.createElement("div"); inner.className="nav-in";
 const brand=document.createElement("a"); brand.className="brand"; brand.href="index.html"; brand.textContent="GoPro 流浪计划";
@@ -17,7 +17,7 @@ const wrap=document.querySelector(".wrap");
 if(wrap){
   const f=document.createElement("footer");
   f.innerHTML=`<div class="host"><img src="${GP.avatarSrc(GP.host.avatar)}" alt="发起人${GP.host.name}的头像"><div class="hn">发起人 ${GP.host.name}<div class="muted">小红书私信我，拿地图链接、进围观群</div></div></div>
-  <div class="ht">#GoPro流浪计划</div><div>每周更新，在小红书、抖音、B 站搜话题就能找到</div>`;
+  <div class="ht">#GoPro流浪计划</div><div>每周更新，在小红书、抖音、B 站搜话题就能找到</div><div><a href="about.html">关于这个计划</a></div>`;
   wrap.append(f);
 }
 })();

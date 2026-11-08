@@ -54,6 +54,7 @@ if(!s){
   const nav=document.createElement("div"); nav.className="row";
   if(n>1) nav.append(Object.assign(document.createElement("a"),{className:"btn",href:`stop.html?n=${n-1}`,textContent:"上一站"}));
   if(n<GP.shown.length) nav.append(Object.assign(document.createElement("a"),{className:"btn",href:`stop.html?n=${n+1}`,textContent:"下一站"}));
+  nav.append(Object.assign(document.createElement("a"),{className:"btn",href:`community.html?n=${n}`,textContent:"这一站的帖子"}));
   nav.append(Object.assign(document.createElement("a"),{className:"btn",href:"map.html",textContent:"回地图"}));
   main.prepend(hero,holder,wsec,story,nav);
 }

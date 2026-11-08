@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="GoPro 流浪计划社区：拿过相机的同学在这里分享，大家一起评论。">
+<title>社区</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="community">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow" id="eyebrow">社区</div>
+    <h1 id="h1">拿过相机的人来讲</h1>
+    <p class="lede">只有拿过相机的流浪者能发帖，大家都可以在下面评论、提问、接龙。</p>
+  </header>
+  <div id="feed" class="stack"><div class="empty">加载中…</div></div>
+</main>
+<script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
+<script>
+const feed=document.getElementById("feed");
+const only=parseInt(new URLSearchParams(location.search).get("n"),10)||null;
+const el=(tag,cls,text)=>{ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; };
+const when=t=>new Date(t).toLocaleString("zh-CN",{timeZone:"Europe/London",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
+let myName=""; try{ myName=localStorage.getItem("gp_nick")||""; }catch(e){}
+
+if(only && GP.shown[only-1]){
+  const s=GP.shown[only-1];
+  document.getElementById("eyebrow").textContent=`社区 · 第 ${only} 站`;
+  document.getElementById("h1").textContent=`${GP.ZH[s.city]}这一周`;
+}
+
+function cmtNode(c){
+  const d=el("div","cmt"); d.append(el("b",null,c.nickname), document.createTextNode(c.body), el("span","muted",when(c.created_at)));
+  return d;
+}
+function postCard(p, cmts){
+  const s=GP.stops[p.stop_no-1]||{};
+  const card=el("article","card post");
+  const head=el("div","post-head");
+  if(s.avatar){ const im=el("img"); im.src=GP.avatarSrc(s.avatar); im.alt=`${s.xhs}的头像`; head.append(im); }
+  else head.append(el("div","ph-av",(s.xhs||"?").slice(0,1)));
+  const who=el("div"); who.append(el("b",null,s.xhs||"持有人"));
+  const meta=el("a","muted",`第 ${p.stop_no} 站 · ${GP.ZH[s.city]||""} · ${when(p.created_at)}`); meta.href=`stop.html?n=${p.stop_no}`; meta.style.textDecoration="none";
+  who.append(meta); head.append(who); card.append(head);
+  card.append(el("p","post-body",p.body));
+  if(p.images && p.images.length){
+    const g=el("div","pics"+(p.images.length===1?" one":p.images.length===2||p.images.length===4?" two":""));
+    p.images.forEach(u=>{ const a=el("a"); a.href=u; a.target="_blank"; a.rel="noopener"; const im=el("img"); im.src=u; im.loading="lazy"; im.alt="照片"; a.append(im); g.append(a); });
+    card.append(g);
+  }
+  const box=el("div","cmts");
+  const list=el("div","stack"); list.style.gap="6px";
+  cmts.forEach(c=>list.append(cmtNode(c)));
+  const f=el("form","cform"); f.noValidate=true;
+  f.innerHTML=`<div class="split"><input name="nick" maxlength="20" placeholder="你的昵称" aria-label="昵称"><input name="body" maxlength="500" placeholder="说点什么" aria-label="评论"></div>
+    <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp" style="position:absolute;left:-9999px;width:1px;height:1px">
+    <div class="row" style="justify-content:space-between;align-items:center"><span class="err" role="alert" style="margin:0"></span><button class="btn hot" type="submit" style="margin-left:auto">评论</button></div>`;
+  f.elements.nick.value=myName;
+  const err=f.querySelector(".err"), btn=f.querySelector("button");
+  f.addEventListener("submit",async e=>{
+    e.preventDefault(); err.textContent="";
+    if(f.elements.website.value) return;
+    const nickname=f.elements.nick.value.trim(), body=f.elements.body.value.trim();
+    if(!nickname){ err.textContent="填个昵称"; f.elements.nick.focus(); return; }
+    if(!body){ err.textContent="写点内容"; f.elements.body.focus(); return; }
+    btn.disabled=true;
+    try{
+      await GP.db.addComment({post_id:p.id,nickname,body});
+      myName=nickname; try{ localStorage.setItem("gp_nick",nickname); }catch(x){}
+      list.append(cmtNode({nickname,body,created_at:new Date().toISOString()}));
+      f.elements.body.value="";
+    }catch(x){ err.textContent=x.message.includes("频繁")?"评论太频繁，稍后再试":"没发出去，稍后再试"; }
+    btn.disabled=false;
+  });
+  box.append(list,f); card.append(box);
+  return card;
+}
+
+(async()=>{
+  try{
+    // 只显示已经开始的站，不提前暴露后面的站
+    const posts=(await GP.db.posts(GP.season, only)).filter(p=>p.stop_no<=GP.shown.length);
+    const cmts=await GP.db.comments(posts.map(p=>p.id));
+    if(!posts.length){
+      feed.replaceChildren(el("div","empty","还没有帖子。拿过相机的同学发了之后会出现在这里。"));
+    }else{
+      feed.replaceChildren(...posts.map(p=>postCard(p,cmts.filter(c=>c.post_id===p.id))));
+    }
+    if(only){ const a=el("a","btn","看全部帖子"); a.href="community.html"; const r=el("div","row"); r.append(a); feed.append(r); }
+  }catch(e){
+    feed.replaceChildren(el("div","empty","社区暂时打不开，稍后再试。"));
+  }
+})();
+</script>
+</body>
+</html>

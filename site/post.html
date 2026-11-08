@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>发帖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="post">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow" id="eyebrow">持有人专属</div>
+    <h1 id="h1">想和大家分享点什么？</h1>
+    <p class="lede">发一条动态到社区，大家会在下面评论。交接以后也能一直用，这个链接只给你，别转发。</p>
+  </header>
+
+  <div class="empty" id="state">正在打开你的专属链接…</div>
+
+  <form class="card form" id="f" novalidate hidden>
+    <label class="field"><span>想说的话</span>
+      <textarea name="body" maxlength="2000" rows="6" placeholder="这周拍到了什么、交接后的感想、想对下一位说的话"></textarea></label>
+    <div class="field"><span>照片 <em>选填，最多 9 张</em></span>
+      <div class="picks" id="picks"></div>
+      <div><label class="btn" for="file">选照片</label><input type="file" id="file" accept="image/*" multiple hidden></div>
+    </div>
+    <p class="tip">为了大家安全，别写交接地点和时间、下一站是谁，也别发能认出别人学校或住处的照片。</p>
+    <p class="err" id="err" role="alert"></p>
+    <button class="btn hot big" type="submit" id="go">发到社区</button>
+  </form>
+
+  <section class="card" id="done" hidden>
+    <h2>发出去啦</h2>
+    <p class="muted" style="margin:0">去社区看看，大家的评论会出现在下面。</p>
+    <div class="row" style="margin-top:14px"><a class="btn hot" href="community.html">去社区</a><a class="btn" id="again" href="">再发一条</a></div>
+  </section>
+
+  <section class="card" id="more" hidden>
+    <h2 style="margin-top:0">发过作品了？</h2>
+    <p class="muted" style="margin:0 0 12px">在小红书、抖音或 B 站发了视频，把链接投上来，会放到你这一站的页面上。</p>
+    <a class="btn" id="towork" href="">投作品链接</a>
+  </section>
+</main>
+<script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
+<script>
+const token=new URLSearchParams(location.search).get("k")||"";
+const $=id=>document.getElementById(id);
+const state=$("state"), f=$("f"), err=$("err"), go=$("go"), picks=$("picks");
+let info=null; const files=[];
+
+// 手机照片很大：先在浏览器里缩到长边 1600、转成 JPEG 再上传
+async function shrink(file){
+  let src;
+  try{ src=await createImageBitmap(file,{imageOrientation:"from-image"}); }
+  catch(e){ src=await new Promise((ok,no)=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=no; im.src=URL.createObjectURL(file); }); }
+  const w=src.width, h=src.height, k=Math.min(1, 1600/Math.max(w,h));
+  const c=document.createElement("canvas"); c.width=Math.round(w*k); c.height=Math.round(h*k);
+  c.getContext("2d").drawImage(src,0,0,c.width,c.height);
+  return await new Promise(ok=>c.toBlob(ok,"image/jpeg",0.85));
+}
+function drawPicks(){
+  picks.replaceChildren(...files.map((b,i)=>{
+    const d=document.createElement("div"); d.className="pk";
+    const im=document.createElement("img"); im.src=URL.createObjectURL(b); im.alt=`第 ${i+1} 张`;
+    const x=document.createElement("button"); x.type="button"; x.textContent="×"; x.setAttribute("aria-label","去掉这张");
+    x.onclick=()=>{ files.splice(i,1); drawPicks(); };
+    d.append(im,x); return d;
+  }));
+}
+$("file").addEventListener("change",async e=>{
+  err.textContent="";
+  for(const file of [...e.target.files]){
+    if(files.length>=9){ err.textContent="最多 9 张"; break; }
+    try{ files.push(await shrink(file)); }catch(x){ err.textContent="有一张照片打不开，换一张试试（iPhone 可以先截图再选）"; }
+  }
+  e.target.value=""; drawPicks();
+});
+
+(async()=>{
+  if(!/^[0-9a-f-]{36}$/i.test(token)){ state.textContent="这个链接不完整。请用奶盖发给你的链接打开。"; return; }
+  try{ info=await GP.db.holderInfo(token); }catch(e){ state.textContent="打不开，可能是网络问题，稍后再试。"; return; }
+  if(!info){ state.textContent="这个链接已经失效了。需要的话私信奶盖。"; return; }
+  const s=GP.stops[info.stop_no-1];
+  $("eyebrow").textContent=`${info.season} · 第 ${info.stop_no} 站${s?" · "+GP.ZH[s.city]:""}`;
+  if(info.label) $("h1").textContent=`${info.label}，想和大家分享点什么？`;
+  $("towork").href=`submit.html?k=${token}`; $("again").href=location.href;
+  $("more").hidden=false;
+  if(!info.can_post){ state.textContent="这个链接现在不能发帖。需要的话私信奶盖。"; return; }
+  state.hidden=true; f.hidden=false;
+})();
+
+f.addEventListener("submit",async e=>{
+  e.preventDefault(); err.textContent="";
+  const body=f.elements.body.value.trim();
+  if(!body){ err.textContent="写几句话再发"; f.elements.body.focus(); return; }
+  go.disabled=true;
+  try{
+    const images=[];
+    for(let i=0;i<files.length;i++){ go.textContent=`上传照片 ${i+1}/${files.length}…`; images.push(await GP.db.uploadImage(token,files[i])); }
+    go.textContent="发送中…";
+    await GP.db.createPost({token, stop_no:info.stop_no, season:info.season, body, images});
+    f.hidden=true; $("done").hidden=false; window.scrollTo({top:0,behavior:"smooth"});
+  }catch(x){
+    err.textContent = x.status===403 ? "这个链接现在不能发帖了" : "没发出去，稍后再试。照片太多的话可以少选几张。";
+    go.disabled=false; go.textContent="发到社区";
+  }
+});
+</script>
+</body>
+</html>

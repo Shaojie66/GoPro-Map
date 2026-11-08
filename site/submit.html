@@ -35,7 +35,7 @@
   <section class="card" id="done" hidden>
     <h2>收到啦，谢谢你</h2>
     <p class="muted" style="margin:0">审核通过后会出现在你这一站的页面上。以后想补充，用同一个链接再投就行。</p>
-    <div class="row" style="margin-top:14px"><a class="btn" id="again" href="">再投一条</a><a class="btn" id="mystop" href="stops.html">看看我的站</a></div>
+    <div class="row" style="margin-top:14px"><a class="btn" id="again" href="">再投一条</a><a class="btn" id="mystop" href="stops.html">看看我的站</a><a class="btn" id="topost" href="">发社区动态</a></div>
   </section>
 </main>
 <script src="assets/common.js"></script>
@@ -63,6 +63,7 @@ const pickUrl=s=>{ const m=String(s||"").match(/https?:\/\/[^\s，。]+/); retur
   if(info.label) document.getElementById("h1").textContent=`${info.label}，把你这一站的作品放上来`;
   document.getElementById("mystop").href=`stop.html?n=${info.stop_no}`;
   document.getElementById("again").href=location.href;
+  document.getElementById("topost").href=`post.html?k=${token}`;
   state.hidden=true; f.hidden=false; workRow();
 })();
 document.getElementById("add").addEventListener("click",()=>{ if(works.children.length<6) workRow(); });

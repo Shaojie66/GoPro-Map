@@ -27,7 +27,7 @@ const feed=document.getElementById("feed");
 const only=parseInt(new URLSearchParams(location.search).get("n"),10)||null;
 const el=(tag,cls,text)=>{ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; };
 const when=t=>new Date(t).toLocaleString("zh-CN",{timeZone:"Europe/London",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
-let myName=""; try{ myName=localStorage.getItem("gp_nick")||""; }catch(e){}
+let me=null, myName="", banned=false; // 登录的人才能评论
 
 if(only && GP.shown[only-1]){
   const s=GP.shown[only-1];
@@ -36,7 +36,9 @@ if(only && GP.shown[only-1]){
 }
 
 function cmtNode(c){
-  const d=el("div","cmt"); d.append(el("b",null,c.nickname), document.createTextNode(c.body), el("span","muted",when(c.created_at)));
+  const d=el("div","cmt");
+  if(c.avatar_url){ const im=el("img","cmt-av"); im.src=c.avatar_url; im.alt=""; im.referrerPolicy="no-referrer"; d.append(im); }
+  d.append(el("b",null,c.nickname), document.createTextNode(c.body), el("span","muted",when(c.created_at)));
   return d;
 }
 function postCard(p, cmts){
@@ -58,33 +60,40 @@ function postCard(p, cmts){
   const box=el("div","cmts");
   const list=el("div","stack"); list.style.gap="6px";
   cmts.forEach(c=>list.append(cmtNode(c)));
-  const f=el("form","cform"); f.noValidate=true;
-  f.innerHTML=`<div class="split"><input name="nick" maxlength="20" placeholder="你的昵称" aria-label="昵称"><input name="body" maxlength="500" placeholder="说点什么" aria-label="评论"></div>
-    <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp" style="position:absolute;left:-9999px;width:1px;height:1px">
-    <div class="row" style="justify-content:space-between;align-items:center"><span class="err" role="alert" style="margin:0"></span><button class="btn hot" type="submit" style="margin-left:auto">评论</button></div>`;
-  f.elements.nick.value=myName;
-  const err=f.querySelector(".err"), btn=f.querySelector("button");
-  f.addEventListener("submit",async e=>{
-    e.preventDefault(); err.textContent="";
-    if(f.elements.website.value) return;
-    const nickname=f.elements.nick.value.trim(), body=f.elements.body.value.trim();
-    if(!nickname){ err.textContent="填个昵称"; f.elements.nick.focus(); return; }
-    if(!body){ err.textContent="写点内容"; f.elements.body.focus(); return; }
-    btn.disabled=true;
-    try{
-      await GP.db.addComment({post_id:p.id,nickname,body});
-      myName=nickname; try{ localStorage.setItem("gp_nick",nickname); }catch(x){}
-      list.append(cmtNode({nickname,body,created_at:new Date().toISOString()}));
-      f.elements.body.value="";
-    }catch(x){ err.textContent=x.message.includes("频繁")?"评论太频繁，稍后再试":"没发出去，稍后再试"; }
-    btn.disabled=false;
-  });
+  let f;
+  if(!me){
+    f=el("div","signin-card"); f.append(el("span","muted","登录后才能评论"));
+    const a=el("a","btn hot","登录 / 注册"); a.href="login.html?next=community.html"; f.append(a);
+  }else{
+    f=el("form","cform"); f.noValidate=true;
+    f.innerHTML=`<input name="body" maxlength="500" placeholder="说点什么" aria-label="评论">
+      <div class="row" style="justify-content:space-between;align-items:center"><span class="muted who-line" style="font-size:13px"></span><span class="err" role="alert" style="margin:0"></span><button class="btn hot" type="submit" style="margin-left:auto">评论</button></div>`;
+    f.querySelector(".who-line").textContent=`以「${myName}」评论`;
+    const err=f.querySelector(".err"), btn=f.querySelector("button");
+    if(banned){ f.elements.body.disabled=true; btn.disabled=true; err.textContent="这个账号暂时不能评论"; }
+    f.addEventListener("submit",async e=>{
+      e.preventDefault(); err.textContent="";
+      const body=f.elements.body.value.trim();
+      if(!body){ err.textContent="写点内容"; f.elements.body.focus(); return; }
+      btn.disabled=true;
+      try{
+        const c=await GP.db.addComment({post_id:p.id,body});
+        list.append(cmtNode(c||{nickname:myName,body,created_at:new Date().toISOString()}));
+        f.elements.body.value="";
+      }catch(x){
+        err.textContent = x.status===401 ? "登录过期了，刷新页面重新登录" : /频繁/.test(x.message) ? "评论太频繁，稍后再试" : /不能评论/.test(x.message) ? "这个账号暂时不能评论" : "没发出去，稍后再试";
+      }
+      btn.disabled=false;
+    });
+  }
   box.append(list,f); card.append(box);
   return card;
 }
 
 (async()=>{
   try{
+    const u=await GP.db.user();
+    if(u){ let prof=null; try{ prof=await GP.db.profile(u.id); }catch(e){} me=u; myName=GP.db.nameOf(u,prof); banned=!!(prof&&prof.banned); }
     // 只显示已经开始的站，不提前暴露后面的站
     const posts=(await GP.db.posts(GP.season, only)).filter(p=>p.stop_no<=GP.shown.length);
     const cmts=await GP.db.comments(posts.map(p=>p.id));

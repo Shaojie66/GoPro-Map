@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>登录</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/data.js"></script>
+</head>
+<body data-page="login">
+<main class="wrap">
+  <header class="hero">
+    <div class="eyebrow">GoPro 流浪计划</div>
+    <h1 id="h1">登录</h1>
+    <p class="lede" id="lede">登录后可以在社区评论、报名下一期。</p>
+  </header>
+
+  <p class="err" id="topErr" role="alert"></p>
+
+  <!-- 没登录 -->
+  <section id="out" hidden class="stack">
+    <a class="btn big google" id="google" href="#"><svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6C6.6 42.6 14.6 48 24 48z"/></svg>用谷歌账号登录</a>
+    <div class="or"><span>或者用邮箱</span></div>
+    <form class="card form" id="emailForm" novalidate>
+      <div class="seg" role="tablist" style="align-self:flex-start">
+        <button class="seg-b" type="button" role="tab" data-mode="in" aria-selected="true">登录</button>
+        <button class="seg-b" type="button" role="tab" data-mode="up" aria-selected="false">注册</button>
+      </div>
+      <label class="field"><span>邮箱</span><input name="email" type="email" autocomplete="email" required></label>
+      <label class="field"><span>密码 <em id="pwHint">至少 8 位</em></span><input name="password" type="password" autocomplete="current-password" minlength="8" required></label>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn hot big" type="submit" id="go">登录</button>
+      <button class="link-btn" type="button" id="forgot">忘记密码？</button>
+    </form>
+  </section>
+
+  <!-- 设新密码（从找回密码邮件点进来） -->
+  <form class="card form" id="resetForm" novalidate hidden>
+    <h2 style="margin:0">设一个新密码</h2>
+    <label class="field"><span>新密码 <em>至少 8 位</em></span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+    <p class="err" id="rerr" role="alert"></p>
+    <button class="btn hot big" type="submit">保存新密码</button>
+  </form>
+
+  <!-- 已登录 -->
+  <section class="card" id="in" hidden>
+    <div class="post-head"><img id="av" alt="" hidden><div class="ph-av" id="avTxt"></div><div><b id="who"></b><div class="muted" id="mail"></div></div></div>
+    <form class="form" id="nameForm" novalidate style="margin-top:16px">
+      <label class="field"><span>昵称 <em>评论时显示这个名字</em></span><input name="name" maxlength="20" required></label>
+      <p class="err" id="nerr" role="alert"></p>
+      <div class="row"><button class="btn hot" type="submit">保存昵称</button><a class="btn" id="back" href="community.html">去社区</a><button class="btn" type="button" id="logout">退出登录</button></div>
+    </form>
+  </section>
+</main>
+<script src="assets/common.js"></script>
+<script src="assets/db.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+// 只允许跳回本站页面
+const nextRaw=new URLSearchParams(location.search).get("next")||"";
+const next=/^[a-z0-9_-]+\.html([?#][^\s]*)?$/i.test(nextRaw)?nextRaw:"";
+const here=new URL(location.pathname+(next?`?next=${encodeURIComponent(next)}`:""),location.origin).href;
+const hash=GP.db.fromHash();
+let mode="in";
+
+function setMode(m){
+  mode=m; $("err").textContent="";
+  document.querySelectorAll("[data-mode]").forEach(b=>b.setAttribute("aria-selected",b.dataset.mode===m));
+  $("go").textContent=m==="in"?"登录":"注册";
+  $("emailForm").elements.password.autocomplete=m==="in"?"current-password":"new-password";
+  $("forgot").hidden=m!=="in";
+}
+document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+$("google").href=GP.db.googleUrl(here);
+
+const msg=e=>{
+  const m=String(e&&e.message||"");
+  if(/Invalid login credentials/i.test(m)) return "邮箱或密码不对。";
+  if(/not confirmed/i.test(m)) return "邮箱还没确认，去邮箱点一下确认链接。";
+  if(/already registered|already exists/i.test(m)) return "这个邮箱已经注册过了，直接登录就行。";
+  if(/Password should be/i.test(m)) return "密码太简单了，至少 8 位。";
+  if(/rate limit|too many/i.test(m)) return "操作太频繁，过几分钟再试。";
+  if(/provider is not enabled/i.test(m)) return "谷歌登录还没开通，先用邮箱吧。";
+  return "没成功："+m;
+};
+
+async function show(){
+  const user=await GP.db.user();
+  $("out").hidden=!!user; $("in").hidden=!user;
+  if(!user){ $("h1").textContent="登录"; return; }
+  if(next){ location.replace(next); return; }
+  let prof=null; try{ prof=await GP.db.profile(user.id); }catch(e){}
+  const name=GP.db.nameOf(user,prof), pic=(prof&&prof.avatar_url)||user.user_metadata&&(user.user_metadata.avatar_url||user.user_metadata.picture);
+  $("h1").textContent=`你好，${name}`; $("lede").textContent="你已经登录了。";
+  $("who").textContent=name; $("mail").textContent=user.email||"";
+  if(pic){ $("av").src=pic; $("av").hidden=false; $("avTxt").hidden=true; } else $("avTxt").textContent=name.slice(0,1);
+  $("nameForm").elements.name.value=prof&&prof.display_name||name;
+  if(prof&&prof.banned) $("nerr").textContent="这个账号暂时不能评论。";
+  $("nameForm").onsubmit=async e=>{
+    e.preventDefault(); $("nerr").textContent="";
+    const v=$("nameForm").elements.name.value.trim(); if(!v){ $("nerr").textContent="昵称不能空着"; return; }
+    try{ await GP.db.saveName(user.id,v); $("who").textContent=v; $("h1").textContent=`你好，${v}`; $("nerr").textContent="保存好了"; }
+    catch(x){ $("nerr").textContent=msg(x); }
+  };
+}
+
+$("emailForm").addEventListener("submit",async e=>{
+  e.preventDefault(); $("err").textContent="";
+  const f=$("emailForm"), email=f.elements.email.value.trim(), pw=f.elements.password.value;
+  if(!email||!/.+@.+\..+/.test(email)){ $("err").textContent="填一下邮箱"; return; }
+  if(pw.length<8){ $("err").textContent="密码至少 8 位"; return; }
+  $("go").disabled=true;
+  try{
+    if(mode==="in"){ await GP.db.signIn(email,pw); await show(); }
+    else{
+      const r=await GP.db.signUp(email,pw,here);
+      if(r&&r.access_token) await show();
+      else $("err").textContent="注册好了！去邮箱点一下确认链接，就会自动登录。没收到的话看看垃圾邮件。";
+    }
+  }catch(x){ $("err").textContent=msg(x); }
+  $("go").disabled=false;
+});
+$("forgot").addEventListener("click",async()=>{
+  const email=$("emailForm").elements.email.value.trim();
+  if(!/.+@.+\..+/.test(email)){ $("err").textContent="先在上面填你的邮箱，再点忘记密码"; return; }
+  try{ await GP.db.recover(email,here); $("err").textContent="发好了，去邮箱点链接设新密码。"; }catch(x){ $("err").textContent=msg(x); }
+});
+$("resetForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const pw=$("resetForm").elements.password.value;
+  if(pw.length<8){ $("rerr").textContent="至少 8 位"; return; }
+  try{ await GP.db.setPassword(pw); $("resetForm").hidden=true; await show(); }catch(x){ $("rerr").textContent=msg(x); }
+});
+$("logout").addEventListener("click",()=>{ GP.db.signOut(); show(); });
+
+if(hash&&hash.error) $("topErr").textContent=msg({message:hash.error});
+if(hash&&hash.type==="recovery"){ $("resetForm").hidden=false; $("h1").textContent="设新密码"; }
+else show();
+</script>
+</body>
+</html>

@@ -48,7 +48,7 @@
       <div id="subs" class="stack"></div>
     </div>
     <div data-pane="community" hidden>
-      <p class="muted" style="margin:0 0 12px">帖子和评论发出就会显示。看到不合适的，改成「隐藏」就只有你能看到。</p>
+      <p class="muted" style="margin:0 0 12px">帖子和评论发出就会显示。看到不合适的，改成「隐藏」就只有你能看到；乱发的人点「拉黑」，他的评论全部隐藏，以后也不能再评论。</p>
       <div id="posts" class="stack"></div>
     </div>
     <div data-pane="links" hidden>
@@ -167,7 +167,9 @@ async function loadPosts(){
       cmts.filter(x=>x.post_id===p.id).reverse().forEach(x=>{
         const r=document.createElement("div"); r.className="row"; r.style.cssText="justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:8px";
         const t=document.createElement("div"); t.className="kv"; t.style.flex="1"; t.textContent=`${x.nickname}：${x.body}`;
-        r.append(t,visSel(x.status,v=>GP.db.setCommentStatus(x.id,v))); c.append(r);
+        const ban=document.createElement("button"); ban.className="btn"; ban.type="button"; ban.textContent="拉黑";
+        ban.addEventListener("click",async()=>{ if(!confirm(`拉黑「${x.nickname}」？他的评论会全部隐藏，以后也不能再评论。`)) return; try{ await GP.db.banAuthor(x.id); loadPosts(); }catch(e){ alert("没拉黑成功："+e.message); } });
+        r.append(t,visSel(x.status,v=>GP.db.setCommentStatus(x.id,v)),ban); c.append(r);
       });
       return c;
     }));

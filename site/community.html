@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="GoPro 流浪计划社区：拿过相机的同学在这里分享，大家一起评论。">
+<meta name="description" content="GoPro 流浪计划社区：流浪者在这里分享，大家一起评论。">
 <title>社区</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,8 +15,8 @@
 <main class="wrap">
   <header class="hero">
     <div class="eyebrow" id="eyebrow">社区</div>
-    <h1 id="h1">拿过相机的人来讲</h1>
-    <p class="lede">只有拿过相机的流浪者能发帖，大家都可以在下面评论、提问、接龙。</p>
+    <h1 id="h1">流浪者来讲</h1>
+    <p class="lede">只有流浪者能发帖，大家都可以在下面评论、提问、接龙。</p>
   </header>
   <div id="feed" class="stack"><div class="empty">加载中…</div></div>
 </main>
@@ -40,13 +40,14 @@ function cmtNode(c){
   return d;
 }
 function postCard(p, cmts){
-  const s=GP.stops[p.stop_no-1]||{};
+  const host=p.stop_no===0; // 站号 0 是发起人
+  const s=host?{xhs:"发起人 "+GP.host.name,avatar:GP.host.avatar}:(GP.stops[p.stop_no-1]||{});
   const card=el("article","card post");
   const head=el("div","post-head");
   if(s.avatar){ const im=el("img"); im.src=GP.avatarSrc(s.avatar); im.alt=`${s.xhs}的头像`; head.append(im); }
   else head.append(el("div","ph-av",(s.xhs||"?").slice(0,1)));
   const who=el("div"); who.append(el("b",null,s.xhs||"持有人"));
-  const meta=el("a","muted",`第 ${p.stop_no} 站 · ${GP.ZH[s.city]||""} · ${when(p.created_at)}`); meta.href=`stop.html?n=${p.stop_no}`; meta.style.textDecoration="none";
+  const meta=el("a","muted",host?when(p.created_at):`第 ${p.stop_no} 站 · ${GP.ZH[s.city]||""} · ${when(p.created_at)}`); meta.href=host?"about.html":`stop.html?n=${p.stop_no}`; meta.style.textDecoration="none";
   who.append(meta); head.append(who); card.append(head);
   card.append(el("p","post-body",p.body));
   if(p.images && p.images.length){
@@ -88,7 +89,7 @@ function postCard(p, cmts){
     const posts=(await GP.db.posts(GP.season, only)).filter(p=>p.stop_no<=GP.shown.length);
     const cmts=await GP.db.comments(posts.map(p=>p.id));
     if(!posts.length){
-      feed.replaceChildren(el("div","empty","还没有帖子。拿过相机的同学发了之后会出现在这里。"));
+      feed.replaceChildren(el("div","empty","还没有帖子。流浪者发了之后会出现在这里。"));
     }else{
       feed.replaceChildren(...posts.map(p=>postCard(p,cmts.filter(c=>c.post_id===p.id))));
     }

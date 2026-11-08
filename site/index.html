@@ -63,7 +63,7 @@ if(GP.cur<0){
 // 最新作品：从最近的站往前找，最多 3 条
 const latest=[]; for(let i=GP.cur;i>=0&&latest.length<3;i--){ (GP.shown[i].works||[]).forEach(w=>latest.length<3&&latest.push(w)); }
 document.getElementById("latest").append(GP.worksList(latest,"第一周的作品正在拍，周五交接后陆续放上来。"));
-document.getElementById("joinline").textContent = GP.join.open ? "报名开放中，填一张表就行。" : `下一期 ${GP.join.opens} 开始招募，现在可以先在小红书留言报名。`;
+document.getElementById("joinline").textContent = GP.join.open ? `下一期 ${GP.join.opens} 开始，现在就能填表报名，一分钟就好。` : `下一期 ${GP.join.opens} 开始招募，现在可以先在小红书留言报名。`;
 </script>
 </body>
 </html>

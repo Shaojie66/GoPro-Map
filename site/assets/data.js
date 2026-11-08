@@ -11,8 +11,8 @@ window.GP = {
     {start: "2026-11-06", city: "bristol", xhs: "otter", avatar: "otter.jpg", nextDir: 70,
      note: "", works: []},
   ],
-  // 报名：第二期 2 月开始招募；报名表在下一阶段上线，现在先用私信和评论报名。
-  join: {open: false, opens: "2027 年 2 月"},
+  // 报名：open 为 true 时首页显示“报名开放中”。第二期 2 月开始招募。
+  join: {open: true, opens: "2027 年 2 月"},
 };
 
 GP.CITIES = {bristol:[558.9,1267.1], oxford:[686.8,1218.4], london:[795.4,1258.4], edinburgh:[501.1,531.1], leeds:[658.7,883.2], manchester:[592.1,935.6], nottingham:[696.3,1021.6], cambridge:[819.4,1144.2], cardiff:[502.0,1262.6]};

@@ -72,31 +72,60 @@ GP.db = (function(){
     submitWork: rows => {
       const keys = ["token","stop_no","season","kind","platform","url","title","note"];
       const body = rows.map(r => Object.fromEntries(keys.map(k => [k, r[k] ?? null])));
-      return req("/rest/v1/submissions", {method: "POST", body, prefer: "return=minimal"});
+      return req("/rest/v1/submissions", {method: "POST", body, auth: true, prefer: "return=minimal"});
     },
     approved: (season, stopNo) => req(`/rest/v1/submissions?select=stop_no,kind,platform,url,title,note,created_at&status=eq.${encodeURIComponent("已通过")}&season=eq.${encodeURIComponent(season)}` + (stopNo ? `&stop_no=eq.${stopNo}` : "") + "&order=created_at.desc"),
     listSubmissions: () => req("/rest/v1/submissions?select=id,stop_no,season,kind,platform,url,title,note,status,created_at&order=created_at.desc", {auth: true}),
     setSubmissionStatus: (id, status) => req(`/rest/v1/submissions?id=eq.${encodeURIComponent(id)}`, {method: "PATCH", body: {status}, auth: true, prefer: "return=minimal"}),
-    listLinks: () => req("/rest/v1/holder_links?select=*&order=stop_no.desc", {auth: true}),
+    // 后台看链接：带上绑定的是谁
+    listLinks: async () => (await req("/rest/v1/rpc/admin_links", {method: "POST", body: {}, auth: true})).sort((a, b) => b.stop_no - a.stop_no),
+    unbindLink: token => req("/rest/v1/rpc/unbind_link", {method: "POST", body: {t: token}, auth: true}),
     createLink: async (stop_no, season, label) => (await req("/rest/v1/holder_links", {method: "POST", body: {stop_no, season, label}, auth: true, prefer: "return=representation"}))[0],
     setLinkActive: (token, active) => req(`/rest/v1/holder_links?token=eq.${encodeURIComponent(token)}`, {method: "PATCH", body: {active}, auth: true, prefer: "return=minimal"}),
-    // 社区：只有当周持有人（本期最新的有效链接）能发帖，所有人能评论
+    // 专属链接：第一次打开时绑定到当前登录的账号，之后只有这个账号能用
+    claimLink: async t => (await req("/rest/v1/rpc/claim_link", {method: "POST", body: {t}, auth: true}))[0] || null,
     holderInfo: async t => (await req("/rest/v1/rpc/holder_info", {method: "POST", body: {t}}))[0] || null,
     uploadImage: async (token, blob) => {
       const fd = new FormData(); fd.append("token", token); fd.append("file", blob, "photo.jpg");
-      const r = await fetch(URL_ + "/functions/v1/upload-image", {method: "POST", headers: {"apikey": KEY}, body: fd});
+      const t = await fresh();
+      const r = await fetch(URL_ + "/functions/v1/upload-image", {method: "POST", headers: {"apikey": KEY, "Authorization": "Bearer " + t}, body: fd});
       const d = await r.json().catch(() => ({}));
       if(!r.ok || !d.url) throw Object.assign(new Error(d.error || ("HTTP " + r.status)), {status: r.status});
       return d.url;
     },
-    createPost: row => req("/rest/v1/posts", {method: "POST", body: row, prefer: "return=minimal"}),
+    createPost: row => req("/rest/v1/posts", {method: "POST", body: row, auth: true, prefer: "return=minimal"}),
+    // 自己发的帖子（用来显示「删除」按钮）
+    myPostIds: async () => { try{ const r = await req("/rest/v1/rpc/my_post_ids", {method: "POST", body: {}, auth: true}); return (r || []).map(x => typeof x === "string" ? x : x.my_post_ids || x.id); }catch(e){ return []; } },
+    deleteMyPost: id => req("/rest/v1/rpc/delete_my_post", {method: "POST", body: {p: id}, auth: true}),
     posts: (season, stopNo) => req(`/rest/v1/posts?select=id,stop_no,season,body,images,created_at&season=eq.${encodeURIComponent(season)}` + (stopNo ? `&stop_no=eq.${stopNo}` : "") + "&order=created_at.desc&limit=50"),
     comments: ids => ids.length ? req(`/rest/v1/comments?select=id,post_id,nickname,avatar_url,body,created_at&post_id=in.(${ids.map(encodeURIComponent).join(",")})&order=created_at.asc`) : Promise.resolve([]),
     addComment: row => req("/rest/v1/comments?select=id,post_id,nickname,avatar_url,body,created_at", {method: "POST", body: row, auth: true, prefer: "return=representation"}).then(r => r && r[0]),
-    listPosts: () => req("/rest/v1/posts?select=id,stop_no,season,body,images,status,created_at&order=created_at.desc&limit=100", {auth: true}),
+    listPosts: () => req("/rest/v1/posts?select=id,stop_no,season,body,images,status,author_deleted,created_at&order=created_at.desc&limit=100", {auth: true}),
     listComments: () => req("/rest/v1/comments?select=id,post_id,nickname,body,status,created_at&order=created_at.desc&limit=300", {auth: true}),
     setPostStatus: (id, status) => req(`/rest/v1/posts?id=eq.${encodeURIComponent(id)}`, {method: "PATCH", body: {status}, auth: true, prefer: "return=minimal"}),
     setCommentStatus: (id, status) => req(`/rest/v1/comments?id=eq.${encodeURIComponent(id)}`, {method: "PATCH", body: {status}, auth: true, prefer: "return=minimal"}),
     setStatus: (id, status) => req(`/rest/v1/signups?id=eq.${encodeURIComponent(id)}`, {method: "PATCH", body: {status}, auth: true, prefer: "return=minimal"}),
   };
 })();
+
+// 发帖页、投稿页共用：先登录，再把专属链接绑到这个账号。成功返回链接信息，否则在 state 里写原因、返回 null
+GP.holderGate = async function(token, state){
+  const say = (text, ...btns) => { state.replaceChildren(document.createTextNode(text)); if(btns.length){ const r = document.createElement("div"); r.className = "row"; r.style.cssText = "justify-content:center;margin-top:14px"; r.append(...btns); state.append(r); } };
+  const btn = (text, href, hot) => { const a = document.createElement("a"); a.className = "btn" + (hot ? " hot" : ""); a.textContent = text; a.href = href; return a; };
+  if(!/^[0-9a-f-]{36}$/i.test(token)){ say("这个链接不完整。请用奶盖发给你的链接打开。"); return null; }
+  const here = location.pathname.split("/").pop() + location.search;
+  const login = "login.html?next=" + encodeURIComponent(here);
+  let user;
+  try{ user = await GP.db.user(); }catch(e){ say("打不开，可能是网络问题，稍后再试。"); return null; }
+  if(!user){ say("这是你的专属链接。第一次用要先登录，登录后链接会绑定到你的账号，以后只有你能用它发帖和投稿。", btn("登录 / 注册", login, true)); return null; }
+  let info;
+  try{ info = await GP.db.claimLink(token); }catch(e){ say("打不开，可能是网络问题，稍后再试。"); return null; }
+  if(!info){ say("这个链接已经失效了。需要的话私信奶盖。"); return null; }
+  if(!info.mine){
+    const out = document.createElement("button"); out.className = "btn"; out.type = "button"; out.textContent = "换个账号登录";
+    out.onclick = () => { GP.db.signOut(); location.href = login; };
+    say(`这个链接已经绑定了别的账号（你现在登录的是 ${user.email || "另一个账号"}）。换回绑定时用的账号就行；如果是你的链接但绑错了，私信奶盖解绑。`, out);
+    return null;
+  }
+  return info;
+};

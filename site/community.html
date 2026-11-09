@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="GoPro 流浪计划社区：流浪者在这里分享，大家一起评论。">
 <title>社区</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/data.js"></script>
 </head>
@@ -27,7 +24,7 @@ const feed=document.getElementById("feed");
 const only=parseInt(new URLSearchParams(location.search).get("n"),10)||null;
 const el=(tag,cls,text)=>{ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; };
 const when=t=>new Date(t).toLocaleString("zh-CN",{timeZone:"Europe/London",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
-let me=null, myName="", banned=false; // 登录的人才能评论
+let me=null, myName="", banned=false, mine=new Set(); // 登录的人才能评论；mine 是自己发的帖子
 
 if(only && GP.shown[only-1]){
   const s=GP.shown[only-1];
@@ -50,7 +47,18 @@ function postCard(p, cmts){
   else head.append(el("div","ph-av",(s.xhs||"?").slice(0,1)));
   const who=el("div"); who.append(el("b",null,s.xhs||"持有人"));
   const meta=el("a","muted",host?when(p.created_at):`第 ${p.stop_no} 站 · ${GP.ZH[s.city]||""} · ${when(p.created_at)}`); meta.href=host?"about.html":`stop.html?n=${p.stop_no}`; meta.style.textDecoration="none";
-  who.append(meta); head.append(who); card.append(head);
+  who.append(meta); head.append(who);
+  if(mine.has(p.id)){
+    const del=el("button","link-btn","删除"); del.type="button"; del.style.marginLeft="auto"; del.setAttribute("aria-label","删除我的这条帖子");
+    del.onclick=async()=>{
+      if(!confirm("删除这条帖子？删除后大家就看不到了。")) return;
+      del.disabled=true;
+      try{ if(await GP.db.deleteMyPost(p.id)) card.remove(); else { del.disabled=false; alert("没删掉，刷新页面再试"); } }
+      catch(x){ del.disabled=false; alert(x.status===401?"登录过期了，刷新页面重新登录":"没删掉，稍后再试"); }
+    };
+    head.append(del);
+  }
+  card.append(head);
   card.append(el("p","post-body",p.body));
   if(p.images && p.images.length){
     const g=el("div","pics"+(p.images.length===1?" one":p.images.length===2||p.images.length===4?" two":""));
@@ -93,7 +101,7 @@ function postCard(p, cmts){
 (async()=>{
   try{
     const u=await GP.db.user();
-    if(u){ let prof=null; try{ prof=await GP.db.profile(u.id); }catch(e){} me=u; myName=GP.db.nameOf(u,prof); banned=!!(prof&&prof.banned); }
+    if(u){ let prof=null; try{ prof=await GP.db.profile(u.id); }catch(e){} me=u; myName=GP.db.nameOf(u,prof); banned=!!(prof&&prof.banned); mine=new Set(await GP.db.myPostIds()); }
     // 只显示已经开始的站，不提前暴露后面的站
     const posts=(await GP.db.posts(GP.season, only)).filter(p=>p.stop_no<=GP.shown.length);
     const cmts=await GP.db.comments(posts.map(p=>p.id));

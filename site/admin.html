@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>报名后台</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/data.js"></script>
 </head>
@@ -129,7 +126,15 @@ function linkItem(l){
   top.append(name,tog); c.append(top);
   const v=document.createElement("div"); v.className="kv"; v.style.wordBreak="break-all"; v.textContent=linkUrl(l.token);
   const row=document.createElement("div"); row.className="row"; row.append(GP.copyBtn(linkUrl(l.token),v));
-  c.append(v,row); return c;
+  const b=document.createElement("div"); b.className="kv";
+  if(l.bound_email||l.bound_at){
+    b.textContent=`已绑定：${l.bound_name?l.bound_name+"（"+(l.bound_email||"")+"）":(l.bound_email||"某个账号")} · ${new Date(l.bound_at).toLocaleDateString("zh-CN",{timeZone:"Europe/London"})}`;
+    const un=document.createElement("button"); un.className="btn"; un.textContent="解绑";
+    un.addEventListener("click",async()=>{ if(!confirm("解绑后，下一个打开这个链接并登录的人会绑定它。确定？")) return;
+      try{ await GP.db.unbindLink(l.token); l.bound_email=null; l.bound_name=null; l.bound_at=null; c.replaceWith(linkItem(l)); }catch(e){ alert("没解绑成功："+e.message); } });
+    row.append(un);
+  } else b.textContent="还没绑定：第一个打开并登录的人会绑定它";
+  c.append(v,b,row); return c;
 }
 async function loadLinks(){
   const box=document.getElementById("links");
@@ -160,7 +165,7 @@ async function loadPosts(){
       const s=GP.stops[p.stop_no-1]||{};
       const c=document.createElement("article"); c.className="card admin-item";
       const top=document.createElement("div"); top.className="top";
-      const name=document.createElement("b"); name.textContent=`${p.stop_no===0?"发起人":`第 ${p.stop_no} 站 · ${s.xhs||"持有人"}`} · ${new Date(p.created_at).toLocaleString("zh-CN",{timeZone:"Europe/London"})}`;
+      const name=document.createElement("b"); name.textContent=`${p.stop_no===0?"发起人":`第 ${p.stop_no} 站 · ${s.xhs||"持有人"}`} · ${new Date(p.created_at).toLocaleString("zh-CN",{timeZone:"Europe/London"})}${p.author_deleted?"（作者删了）":""}`;
       top.append(name,visSel(p.status,v=>GP.db.setPostStatus(p.id,v))); c.append(top);
       const b=document.createElement("div"); b.className="kv"; b.style.whiteSpace="pre-wrap"; b.textContent=p.body; c.append(b);
       if(p.images.length){ const d=document.createElement("div"); d.className="kv"; d.textContent=`${p.images.length} 张照片`; c.append(d); }

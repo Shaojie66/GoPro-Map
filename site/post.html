@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>发帖</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/data.js"></script>
 </head>
@@ -16,7 +13,7 @@
   <header class="hero">
     <div class="eyebrow" id="eyebrow">持有人专属</div>
     <h1 id="h1">想和大家分享点什么？</h1>
-    <p class="lede">发一条动态到社区，大家会在下面评论。交接以后也能一直用，这个链接只给你，别转发。</p>
+    <p class="lede">发一条动态到社区，大家会在下面评论。交接以后也能一直用。第一次打开要登录，链接会绑定你的账号。</p>
   </header>
 
   <div class="empty" id="state">正在打开你的专属链接…</div>
@@ -28,7 +25,7 @@
       <div class="picks" id="picks"></div>
       <div><label class="btn" for="file">选照片</label><input type="file" id="file" accept="image/*" multiple hidden></div>
     </div>
-    <p class="tip">为了大家安全，别写交接地点和时间、下一站是谁，也别发能认出别人学校或住处的照片。</p>
+    <p class="tip">为了大家安全：别写下一站是谁、交接的地点和时间，也别发能认出学校、宿舍或住处的照片。</p>
     <p class="err" id="err" role="alert"></p>
     <button class="btn hot big" type="submit" id="go">发到社区</button>
   </form>
@@ -82,15 +79,12 @@ $("file").addEventListener("change",async e=>{
 });
 
 (async()=>{
-  if(!/^[0-9a-f-]{36}$/i.test(token)){ state.textContent="这个链接不完整。请用奶盖发给你的链接打开。"; return; }
-  try{ info=await GP.db.holderInfo(token); }catch(e){ state.textContent="打不开，可能是网络问题，稍后再试。"; return; }
-  if(!info){ state.textContent="这个链接已经失效了。需要的话私信奶盖。"; return; }
+  info=await GP.holderGate(token,state); if(!info) return;
   const s=GP.stops[info.stop_no-1];
   $("eyebrow").textContent=info.stop_no===0?`发起人 ${GP.host.name}`:`${info.season} · 第 ${info.stop_no} 站${s?" · "+GP.ZH[s.city]:""}`;
   if(info.label) $("h1").textContent=`${info.label}，想和大家分享点什么？`;
   $("towork").href=`submit.html?k=${token}`; $("again").href=location.href;
   $("more").hidden=info.stop_no===0;
-  if(!info.can_post){ state.textContent="这个链接现在不能发帖。需要的话私信奶盖。"; return; }
   state.hidden=true; f.hidden=false;
 })();
 
@@ -106,7 +100,7 @@ f.addEventListener("submit",async e=>{
     await GP.db.createPost({token, stop_no:info.stop_no, season:info.season, body, images});
     f.hidden=true; $("done").hidden=false; window.scrollTo({top:0,behavior:"smooth"});
   }catch(x){
-    err.textContent = x.status===403 ? "这个链接现在不能发帖了" : "没发出去，稍后再试。照片太多的话可以少选几张。";
+    err.textContent = x.status===401 ? "登录过期了，刷新页面重新登录" : x.status===429 || /频繁|太快/.test(x.message) ? "发得太频繁了，过一会儿再发" : x.status===403 ? "这个链接现在不能发帖了" : "没发出去，稍后再试。照片太多的话可以少选几张。";
     go.disabled=false; go.textContent="发到社区";
   }
 });

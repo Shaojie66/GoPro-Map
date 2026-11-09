@@ -7,8 +7,9 @@
   --shadow-1:0 1px 2px rgba(0,0,0,.06),0 6px 16px rgba(0,0,0,.08);
   --shadow-2:0 6px 20px rgba(0,0,0,.14);
   --glass:rgba(255,255,255,.88);
-  --display:"ZCOOL KuaiLe","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
-  --body:"Noto Sans SC","PingFang SC","Microsoft YaHei",-apple-system,system-ui,sans-serif;
+  /* 用系统自带字体：谷歌字体在国内打不开，还会拖慢页面 */
+  --display:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",system-ui,sans-serif;
+  --body:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --sea:#16324A; --sea-wave:#21445F; --land:#C9A94E; --land-ireland:#3A4152;
@@ -77,12 +78,12 @@ h2{font-weight:600;font-size:22px;line-height:1.2;margin:0 0 12px}
 .seg.next{stroke:var(--pin);stroke-width:5;stroke-dasharray:4 14;opacity:1;animation:march 1.2s linear infinite}
 @keyframes march{to{stroke-dashoffset:-18}}
 .nextq circle{fill:var(--paper);stroke:var(--pin);stroke-width:4;stroke-dasharray:6 6}
-.nextq text{font-family:var(--display);font-size:34px;fill:var(--pin);text-anchor:middle;dominant-baseline:central}
+.nextq text{font-family:var(--display);font-weight:700;font-size:34px;fill:var(--pin);text-anchor:middle;dominant-baseline:central}
 .pin[role=button]{cursor:pointer}
 .pin circle.dot{fill:var(--paper);stroke:var(--ink);stroke-width:4}
 .pin.done circle.dot{fill:var(--pin-done)}
 .pin.now circle.dot{fill:var(--pin)}
-.pin text.lbl{font-family:var(--display);font-size:32px;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:7px;stroke-linejoin:round}
+.pin text.lbl{font-family:var(--display);font-weight:700;font-size:32px;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:7px;stroke-linejoin:round}
 .pin.sel text.lbl{text-decoration:underline}
 .halo{fill:var(--pin);opacity:.25;transform-box:fill-box;transform-origin:center;animation:pulse 1.8s ease-out infinite}
 @keyframes pulse{0%{transform:scale(.6);opacity:.45}100%{transform:scale(1.6);opacity:0}}
@@ -182,6 +183,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink);box
 .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;font:inherit;font-size:13px;color:var(--ink-soft);padding:8px 10px;cursor:pointer;border-radius:8px}
 .eye:hover{color:var(--ink)}
 .link-btn:disabled{text-decoration:none;opacity:.6;cursor:default}
+.btn.dim{opacity:.5}
 .link-btn{background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;align-self:flex-start}
 .cmt-av{width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:-6px;margin-right:6px}
 .signin-card{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}

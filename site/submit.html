@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>投稿</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/data.js"></script>
 </head>
@@ -55,9 +52,7 @@ function workRow(){
 // 小红书/抖音的分享文案里常夹着链接，自动把网址抠出来
 const pickUrl=s=>{ const m=String(s||"").match(/https?:\/\/[^\s，。]+/); return m?m[0]:""; };
 (async()=>{
-  if(!/^[0-9a-f-]{36}$/i.test(token)){ state.textContent="这个投稿链接不完整。请用奶盖发给你的链接打开。"; return; }
-  try{ info=await GP.db.linkInfo(token); }catch(e){ state.textContent="打不开投稿链接，可能是网络问题，稍后再试。"; return; }
-  if(!info){ state.textContent="这个投稿链接已经失效了。需要的话私信奶盖要一个新的。"; return; }
+  info=await GP.holderGate(token,state); if(!info) return;
   const s=GP.stops[info.stop_no-1];
   document.getElementById("eyebrow").textContent=`${info.season} · 第 ${info.stop_no} 站${s?" · "+GP.ZH[s.city]:""}`;
   if(info.label) document.getElementById("h1").textContent=`${info.label}，把你这一站的作品放上来`;
@@ -81,7 +76,7 @@ f.addEventListener("submit",async e=>{
   if(!rows.length){ err.textContent="至少贴一条作品链接，或者写几句话"; return; }
   go.disabled=true; go.textContent="提交中…";
   try{ await GP.db.submitWork(rows); f.hidden=true; document.getElementById("done").hidden=false; window.scrollTo({top:0,behavior:"smooth"}); }
-  catch(x){ err.textContent="没提交成功，稍后再试，或者直接把链接私信给奶盖。"; go.disabled=false; go.textContent="提交"; }
+  catch(x){ err.textContent=x.status===401?"登录过期了，刷新页面重新登录":"没提交成功，稍后再试，或者直接把链接私信给奶盖。"; go.disabled=false; go.textContent="提交"; }
 });
 </script>
 </body>

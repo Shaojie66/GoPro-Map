@@ -1,0 +1,20 @@
+# Supabase 免费版一周没有访问会自动暂停。
+# 这个任务每天访问一次数据库（只读一条公开帖子），让它保持开着。
+name: 每天唤醒数据库
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # 每天英国时间早上 6 点左右
+  workflow_dispatch:        # 也可以在 Actions 页面手动点一次
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 访问一次数据库
+        run: |
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            "https://ozdfujekpbvxzfcseegg.supabase.co/rest/v1/posts?select=id&limit=1" \
+            -H "apikey: sb_publishable_iDY_oNf6vju0vNQeoz4pGg_HUcKv_Ku")
+          echo "返回 $code"
+          test "$code" = "200"

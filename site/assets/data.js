@@ -12,7 +12,7 @@ window.GP = {
      note: "", works: []},
     {start: "2026-11-14", city: "oxford", xhs: "succulent", avatar: "succulent.jpg", nextDir: 345,
      note: "", works: []},
-    {start: "2026-11-22", city: "edinburgh", xhs: "", avatar: "", nextDir: 160,
+    {start: "2026-11-22", city: "edinburgh", xhs: "小林绘梨", avatar: "xiaolin.jpg", nextDir: 160,
      note: "", works: []},
   ],
   // 报名：open 为 true 时首页显示“报名开放中”。第二期 2 月开始招募。
